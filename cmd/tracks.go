@@ -1,28 +1,26 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"image/color"
 	"log"
-	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	iaeroapi "github.com/noodnik2/kmlflight/internal/aeroapi"
-	"github.com/noodnik2/kmlflight/internal/kml"
-	ios "github.com/noodnik2/kmlflight/internal/os"
-	"github.com/noodnik2/kmlflight/internal/persistence"
-	"github.com/noodnik2/kmlflight/pkg/aeroapi"
+	iaeroapi "github.com/noodnik2/flightvisualizer/internal/aeroapi"
+	"github.com/noodnik2/flightvisualizer/internal/kml"
+	ios "github.com/noodnik2/flightvisualizer/internal/os"
+	"github.com/noodnik2/flightvisualizer/internal/persistence"
+	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 
-const cmdFlagTracksMock = "mock"
+const cmdFlagTracksTailNumber = "tailNumber"
+const cmdFlagTracksFromSavedResponses = "fromSavedResponses"
 const cmdFlagTracksSaveResponses = "saveResponses"
 const cmdFlagTracksNoBanking = "noBanking"
-const cmdFlagTracksLaunch = "launchFirstKml"
+const cmdFlagTracksLaunch = "launch"
 const cmdFlagTracksKind = "kind"
 const cmdFlagTracksOutputDir = "outputDir"
 const cmdFlagTracksCutoffTime = "cutoffTime"
@@ -34,33 +32,35 @@ const cmdFlagTracksKindCamera = "camera"
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
-	versionCmd.Flags().BoolP(cmdFlagTracksMock, "m", false, "Use mock backend")
 	versionCmd.Flags().BoolP(cmdFlagTracksLaunch, "l", false, "Launch the KML file (from the most recent flight) once created")
-	versionCmd.Flags().BoolP(cmdFlagTracksSaveResponses, "s", false, "Save responses from AeroAPI requests")
 	versionCmd.Flags().BoolP(cmdFlagTracksNoBanking, "b", false, "Disable banking heuristic calculations")
+	versionCmd.Flags().BoolP(cmdFlagTracksSaveResponses, "s", false, "Save responses from AeroAPI requests")
+	versionCmd.Flags().StringP(cmdFlagTracksFromSavedResponses, "r", "", "Use saved responses instead of querying AeroAPI")
+	versionCmd.Flags().String(cmdFlagTracksTailNumber, "", "Tail number identifier")
 	versionCmd.Flags().String(cmdFlagTracksKind, cmdFlagTracksKindCamera, "Kind of tour to create")
 	versionCmd.Flags().String(cmdFlagTracksOutputDir, ".", "Directory to receive file(s) created")
 	versionCmd.Flags().String(cmdFlagTracksCutoffTime, "", "Cut off time for flight(s) to consider")
 	versionCmd.Flags().Int(cmdFlagTracksFlightCount, 0, "Count of (most recent) flights to consider (0=unlimited)")
+	_ = versionCmd.MarkFlagRequired(cmdFlagTracksTailNumber)
 }
 
 type tracksCommandArgs struct {
-	tailNumber       string
-	cutoffTime       *time.Time
-	kmlKind          string
-	outputDir        string
-	flightCount      int
-	verboseOperation bool
-	saveResponses    bool
-	launchFirstKml   bool
-	useMockData      bool
-	noBanking        bool
+	tailNumber         string
+	cutoffTime         *time.Time
+	kmlKind            string
+	outputDir          string
+	flightCount        int
+	verboseOperation   bool
+	saveResponses      bool
+	launchFirstKml     bool
+	fromSavedResponses string
+	noBanking          bool
 }
 
 var versionCmd = &cobra.Command{
 	Use:   "tracks",
-	Short: "Creates KML track log(s) from a flight by querying FLightAware AeroAPI",
-	Long:  `Uses the parameters supplied to invoke AeroAPI and build the KML track log from its response.`,
+	Short: "Generates KML visualizations of flight track logs retrieved from FlightAware's AeroAPI",
+	Long:  `Uses the parameters supplied to invoke AeroAPI and build the KML visualizations from its response`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		cmdArgs, parseErr := parseArgs(cmd, args)
@@ -70,8 +70,14 @@ var versionCmd = &cobra.Command{
 
 		var aeroApiGetter aeroapi.GetRequester
 		var aeroApiErr error
-		if cmdArgs.useMockData {
-			aeroApiGetter, aeroApiErr = getMockGetter(cmdArgs.verboseOperation)
+		if cmdArgs.fromSavedResponses != "" {
+			fgf := &iaeroapi.AeroApiFileGetterFactory{
+				Verbose:     cmdArgs.verboseOperation,
+				AssetReader: nil,
+				AssetFolder: "testfixtures",
+			}
+			// TODO another level of indirection so we don't need to pass the file name here
+			aeroApiGetter, aeroApiErr = fgf.NewRequester("pattern_practice_flight_id.json")
 			log.Printf("INFO: using mock data")
 		} else {
 			aeroApiGetter, aeroApiErr = getAeroApiHttpGetter(cmdArgs.verboseOperation)
@@ -195,27 +201,32 @@ func getAeroApiHttpGetter(isVerbose bool) (aeroapi.GetRequester, error) {
 	return httpAeroApi.Get, nil
 }
 
-func getMockGetter(isVerbose bool) (aeroapi.GetRequester, error) {
-	mockGetter := func(endpoint string) ([]byte, error) {
-		mockFilename := "testfixtures/pattern_practice_flight_id.json"
-		if strings.Contains(endpoint, "/track") {
-			mockFilename = "testfixtures/pattern_practice_track.json"
-		}
-		if isVerbose {
-			log.Printf("INFO: satisfying request for(%s) with mock data from(%s)\n", endpoint, mockFilename)
-		}
-		return os.ReadFile(mockFilename)
-	}
-	return mockGetter, nil
-}
-
 func parseArgs(cmd *cobra.Command, args []string) (cmdArgs tracksCommandArgs, err error) {
-	if len(args) != 1 {
-		err = errors.New("please supply single argument: tail number")
+	if cmdArgs.verboseOperation, err = cmd.Flags().GetBool(cmdFlagRootVerbose); err != nil {
 		return
 	}
-	cmdArgs.tailNumber = args[0]
+	if cmdArgs.launchFirstKml, err = cmd.Flags().GetBool(cmdFlagTracksLaunch); err != nil {
+		return
+	}
+	if cmdArgs.noBanking, err = cmd.Flags().GetBool(cmdFlagTracksNoBanking); err != nil {
+		return
+	}
+	if cmdArgs.saveResponses, err = cmd.Flags().GetBool(cmdFlagTracksSaveResponses); err != nil {
+		return
+	}
 
+	if cmdArgs.tailNumber, err = cmd.Flags().GetString(cmdFlagTracksTailNumber); err != nil {
+		return
+	}
+	if cmdArgs.fromSavedResponses, err = cmd.Flags().GetString(cmdFlagTracksFromSavedResponses); err != nil {
+		return
+	}
+	if cmdArgs.outputDir, err = cmd.Flags().GetString(cmdFlagTracksOutputDir); err != nil {
+		return
+	}
+	if cmdArgs.kmlKind, err = cmd.Flags().GetString(cmdFlagTracksKind); err != nil {
+		return
+	}
 	var cutoffTimeString string
 	if cutoffTimeString, err = cmd.Flags().GetString(cmdFlagTracksCutoffTime); err != nil {
 		return
@@ -228,28 +239,7 @@ func parseArgs(cmd *cobra.Command, args []string) (cmdArgs tracksCommandArgs, er
 		cmdArgs.cutoffTime = &toTime
 	}
 
-	if cmdArgs.outputDir, err = cmd.Flags().GetString(cmdFlagTracksOutputDir); err != nil {
-		return
-	}
-	if cmdArgs.kmlKind, err = cmd.Flags().GetString(cmdFlagTracksKind); err != nil {
-		return
-	}
 	if cmdArgs.flightCount, err = cmd.Flags().GetInt(cmdFlagTracksFlightCount); err != nil {
-		return
-	}
-	if cmdArgs.verboseOperation, err = cmd.Flags().GetBool(cmdFlagRootVerbose); err != nil {
-		return
-	}
-	if cmdArgs.saveResponses, err = cmd.Flags().GetBool(cmdFlagTracksSaveResponses); err != nil {
-		return
-	}
-	if cmdArgs.launchFirstKml, err = cmd.Flags().GetBool(cmdFlagTracksLaunch); err != nil {
-		return
-	}
-	if cmdArgs.useMockData, err = cmd.Flags().GetBool(cmdFlagTracksMock); err != nil {
-		return
-	}
-	if cmdArgs.noBanking, err = cmd.Flags().GetBool(cmdFlagTracksNoBanking); err != nil {
 		return
 	}
 

@@ -10,7 +10,7 @@ type GetRequester func(url string) ([]byte, error)
 type ResponseSaver func(string, []byte) (string, error)
 
 type FlightsResponse struct {
-	Flights []Flight
+	Flights []Flight `json:"flights"`
 }
 
 type Flight struct {
@@ -55,9 +55,9 @@ func (a *Api) GetFlightIds(tailNumber string, cutoffTime *time.Time, flightCount
 		}
 	}
 
-	var flights FlightsResponse
-	if unmarshallErr := json.Unmarshal(responseBytes, &flights); unmarshallErr != nil {
-		return nil, newFlightApiError("unmarshal", endpoint, unmarshallErr)
+	flights, flightsErr := FlightsFromJson(responseBytes)
+	if flightsErr != nil {
+		return nil, newFlightApiError("unmarshal", endpoint, flightsErr)
 	}
 
 	var flightIds []string
@@ -94,6 +94,14 @@ func (a *Api) GetTrackForFlightId(flightId string) (*Track, error) {
 
 	track.FlightId = flightId
 	return track, nil
+}
+
+func FlightsFromJson(flightsBytes []byte) (*FlightsResponse, error) {
+	var flights FlightsResponse
+	if unmarshallErr := json.Unmarshal(flightsBytes, &flights); unmarshallErr != nil {
+		return nil, unmarshallErr
+	}
+	return &flights, nil
 }
 
 func TrackFromJson(aeroApiTrackJson []byte) (*Track, error) {

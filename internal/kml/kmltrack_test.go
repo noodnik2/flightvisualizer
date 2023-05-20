@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/noodnik2/kmlflight/pkg/aeroapi"
-	"github.com/noodnik2/kmlflight/testfixtures"
+	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
+	"github.com/noodnik2/flightvisualizer/testfixtures"
 )
 
 func TestNewKmlTrack(t *testing.T) {

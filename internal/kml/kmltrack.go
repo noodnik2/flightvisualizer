@@ -7,7 +7,7 @@ import (
 
 	gokml "github.com/twpayne/go-kml/v3"
 
-	"github.com/noodnik2/kmlflight/pkg/aeroapi"
+	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 
 // KmlTrack contains the fully-rendered KML document representing a flight,

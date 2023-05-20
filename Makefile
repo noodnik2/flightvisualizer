@@ -1,6 +1,6 @@
 
 OUT_DIR=dist
-APP_NAME=kmlflight
+APP_NAME=fviz
 GO=go
 
 help: ## Print this help

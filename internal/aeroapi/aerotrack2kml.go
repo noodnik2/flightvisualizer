@@ -3,8 +3,8 @@ package aeroapi
 import (
 	"time"
 
-	"github.com/noodnik2/kmlflight/internal/kml"
-	"github.com/noodnik2/kmlflight/pkg/aeroapi"
+	"github.com/noodnik2/flightvisualizer/internal/kml"
+	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 
 type TracksConverter struct {

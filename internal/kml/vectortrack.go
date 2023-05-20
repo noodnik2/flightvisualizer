@@ -10,7 +10,7 @@ import (
 
 	gokml "github.com/twpayne/go-kml/v3"
 
-	"github.com/noodnik2/kmlflight/pkg/aeroapi"
+	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 
 // VectorBuilder - builds a KML folder of Placemarks revealing significant

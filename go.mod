@@ -1,4 +1,4 @@
-module github.com/noodnik2/kmlflight
+module github.com/noodnik2/flightvisualizer
 
 go 1.20
 

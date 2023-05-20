@@ -5,7 +5,7 @@ import (
 
 	gokml "github.com/twpayne/go-kml/v3"
 
-	"github.com/noodnik2/kmlflight/pkg/aeroapi"
+	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 
 // PathBuilder builds the visible "path" track, and optionally its extrusion to the ground

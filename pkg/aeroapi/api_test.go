@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/noodnik2/kmlflight/testfixtures"
 	"github.com/stretchr/testify/require"
+
+	"github.com/noodnik2/flightvisualizer/testfixtures"
 )
 
 func TestGetFlightIdsRequestGeneration(t *testing.T) {

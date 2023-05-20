@@ -64,7 +64,8 @@ func (c *HttpAeroApi) Get(endpoint string) ([]byte, error) {
 	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		responseErr := fmt.Errorf("statusCode(%d), status(%s)", resp.StatusCode, resp.Status)
+		responsePayload, _ := io.ReadAll(resp.Body)
+		responseErr := fmt.Errorf("statusCode(%d), status(%s), body(%s)", resp.StatusCode, resp.Status, string(responsePayload))
 		return nil, newApiError("get successful response", requestUrl, responseErr)
 	}
 
