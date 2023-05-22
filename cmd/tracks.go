@@ -1,257 +1,274 @@
 package cmd
 
 import (
-	"fmt"
-	"image/color"
-	"log"
-	"runtime"
-	"time"
+    "fmt"
+    "image/color"
+    "log"
+    "os"
+    "path/filepath"
+    "runtime"
+    "sort"
+    "strings"
+    "time"
 
-	"github.com/spf13/cobra"
+    "github.com/spf13/cobra"
 
-	iaeroapi "github.com/noodnik2/flightvisualizer/internal/aeroapi"
-	"github.com/noodnik2/flightvisualizer/internal/kml"
-	ios "github.com/noodnik2/flightvisualizer/internal/os"
-	"github.com/noodnik2/flightvisualizer/internal/persistence"
-	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
+    iaeroapi "github.com/noodnik2/flightvisualizer/internal/aeroapi"
+    "github.com/noodnik2/flightvisualizer/internal/kml"
+    "github.com/noodnik2/flightvisualizer/internal/kml/builders"
+    ios "github.com/noodnik2/flightvisualizer/internal/os"
+    "github.com/noodnik2/flightvisualizer/internal/persistence"
+    "github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 
 const cmdFlagTracksTailNumber = "tailNumber"
-const cmdFlagTracksFromSavedResponses = "fromSavedResponses"
-const cmdFlagTracksSaveResponses = "saveResponses"
+const cmdFlagTracksFromArtifacts = "fromArtifacts"
+const cmdFlagTracksSaveArtifacts = "saveArtifacts"
 const cmdFlagTracksNoBanking = "noBanking"
 const cmdFlagTracksLaunch = "launch"
-const cmdFlagTracksKind = "kind"
-const cmdFlagTracksOutputDir = "outputDir"
+const cmdFlagTracksLayers = "layers"
+const cmdFlagTracksArtifactsDir = "artifactsDir"
 const cmdFlagTracksCutoffTime = "cutoffTime"
 const cmdFlagTracksFlightCount = "flightCount"
 
-const cmdFlagTracksKindStd = "std"
-const cmdFlagTracksKindPlacemark = "placemark"
-const cmdFlagTracksKindCamera = "camera"
+const cmdFlagTracksLayerCamera = "camera"
+const cmdFlagTracksLayerPath = "path"
+const cmdFlagTracksLayerPlacemark = "placemark"
+const cmdFlagTracksLayerVector = "vector"
+
+var cmdFlagTracksLayersDefault = []string{cmdFlagTracksLayerCamera, cmdFlagTracksLayerPath, cmdFlagTracksLayerVector}
+var cmdFlagTracksLayersSupported = []string{cmdFlagTracksLayerCamera, cmdFlagTracksLayerPath, cmdFlagTracksLayerPlacemark, cmdFlagTracksLayerVector}
+
+const kmzArtifactFilePrefix = "fviz_"
 
 func init() {
-	rootCmd.AddCommand(versionCmd)
-	versionCmd.Flags().BoolP(cmdFlagTracksLaunch, "l", false, "Launch the KML file (from the most recent flight) once created")
-	versionCmd.Flags().BoolP(cmdFlagTracksNoBanking, "b", false, "Disable banking heuristic calculations")
-	versionCmd.Flags().BoolP(cmdFlagTracksSaveResponses, "s", false, "Save responses from AeroAPI requests")
-	versionCmd.Flags().StringP(cmdFlagTracksFromSavedResponses, "r", "", "Use saved responses instead of querying AeroAPI")
-	versionCmd.Flags().String(cmdFlagTracksTailNumber, "", "Tail number identifier")
-	versionCmd.Flags().String(cmdFlagTracksKind, cmdFlagTracksKindCamera, "Kind of tour to create")
-	versionCmd.Flags().String(cmdFlagTracksOutputDir, ".", "Directory to receive file(s) created")
-	versionCmd.Flags().String(cmdFlagTracksCutoffTime, "", "Cut off time for flight(s) to consider")
-	versionCmd.Flags().Int(cmdFlagTracksFlightCount, 0, "Count of (most recent) flights to consider (0=unlimited)")
-	_ = versionCmd.MarkFlagRequired(cmdFlagTracksTailNumber)
+    rootCmd.AddCommand(versionCmd)
+    versionCmd.Flags().BoolP(cmdFlagTracksLaunch, "l", false, "Launch the KML file (depicting the track of the most recent flight retrieved) once created")
+    versionCmd.Flags().BoolP(cmdFlagTracksNoBanking, "b", false, "Disable banking heuristic calculations")
+    versionCmd.Flags().BoolP(cmdFlagTracksSaveArtifacts, "s", false, "Save responses from AeroAPI requests")
+    versionCmd.Flags().StringP(cmdFlagTracksFromArtifacts, "r", "", "Use saved responses instead of querying AeroAPI")
+    versionCmd.Flags().String(cmdFlagTracksTailNumber, "", "Tail number identifier")
+    versionCmd.Flags().String(cmdFlagTracksLayers, strings.Join(cmdFlagTracksLayersDefault, ","), "Layer(s) of the KML depiction to create")
+    versionCmd.Flags().String(cmdFlagTracksArtifactsDir, "artifacts", "Directory to save or load artifacts")
+    versionCmd.Flags().String(cmdFlagTracksCutoffTime, "", "Cut off time for flight(s) to consider")
+    versionCmd.Flags().Int(cmdFlagTracksFlightCount, 0, "Count of (most recent) flights to consider (0=unlimited)")
+    _ = versionCmd.MarkFlagRequired(cmdFlagTracksTailNumber)
 }
 
 type tracksCommandArgs struct {
-	tailNumber         string
-	cutoffTime         *time.Time
-	kmlKind            string
-	outputDir          string
-	flightCount        int
-	verboseOperation   bool
-	saveResponses      bool
-	launchFirstKml     bool
-	fromSavedResponses string
-	noBanking          bool
+    launchFirstKml     bool
+    noBanking          bool
+    saveResponses      bool
+    verboseOperation   bool
+    artifactsDir       string
+    fromSavedResponses string
+    kmlLayers          string
+    tailNumber         string
+    flightCount        int
+    cutoffTime         *time.Time
 }
 
 var versionCmd = &cobra.Command{
-	Use:   "tracks",
-	Short: "Generates KML visualizations of flight track logs retrieved from FlightAware's AeroAPI",
-	Long:  `Uses the parameters supplied to invoke AeroAPI and build the KML visualizations from its response`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+    Use:   "tracks",
+    Short: "Tracks",
+    Long:  `Generates KML visualizations of flight track logs retrieved from FlightAware's AeroAPI`,
+    RunE: func(cmd *cobra.Command, args []string) error {
 
-		cmdArgs, parseErr := parseArgs(cmd, args)
-		if parseErr != nil {
-			return fmt.Errorf("invalid syntax: %w", parseErr)
-		}
+        cmdArgs, parseErr := parseArgs(cmd)
+        if parseErr != nil {
+            return fmt.Errorf("invalid syntax: %w", parseErr)
+        }
 
-		var aeroApiGetter aeroapi.GetRequester
-		var aeroApiErr error
-		if cmdArgs.fromSavedResponses != "" {
-			fgf := &iaeroapi.AeroApiFileGetterFactory{
-				Verbose:     cmdArgs.verboseOperation,
-				AssetReader: nil,
-				AssetFolder: "testfixtures",
-			}
-			// TODO another level of indirection so we don't need to pass the file name here
-			aeroApiGetter, aeroApiErr = fgf.NewRequester("pattern_practice_flight_id.json")
-			log.Printf("INFO: using mock data")
-		} else {
-			aeroApiGetter, aeroApiErr = getAeroApiHttpGetter(cmdArgs.verboseOperation)
-		}
-		if aeroApiErr != nil {
-			log.Fatalf("unable to access AeroAPI: %v", aeroApiErr)
-			//notreached
-		}
+        // fileBasedAeroApi is a file-based instance of our AeroApi library API,
+        // used to save or retrieve saved AeroAPI responses
+        fileBasedAeroApi := &aeroapi.FileAeroApi{
+            Verbose:      cmdArgs.verboseOperation,
+            ArtifactsDir: cmdArgs.artifactsDir,
+        }
 
-		aeroApi := &aeroapi.Api{Getter: aeroApiGetter}
+        aeroApi := &aeroapi.RetrieverSaverApiImpl{}
+        if cmdArgs.fromSavedResponses != "" {
+            aeroApi.Retriever = fileBasedAeroApi
+            if cmdArgs.saveResponses {
+                // there's no reason to save data read from files
+                log.Printf("NOTE: ignoring '%s' option; incompatible with '%s'",
+                    cmdFlagTracksSaveArtifacts, cmdFlagTracksFromArtifacts)
+            }
+        } else {
+            var aeroApiErr error
+            if aeroApi.Retriever, aeroApiErr = getAeroApiHttpRetriever(cmdArgs.verboseOperation); aeroApiErr != nil {
+                log.Fatalf("unable to access AeroAPI: %v", aeroApiErr)
+                //notreached
+            }
+            if cmdArgs.saveResponses {
+                aeroApi.Saver = fileBasedAeroApi
+            }
+        }
 
-		commandStartTime := time.Now()
-		if cmdArgs.saveResponses {
-			saver := &persistence.FileSaver{
-				FilenameSuffix: ".json",
-				Timestamp:      &commandStartTime,
-			}
-			aeroApi.Saver = saver.SaveEndpointResponse
-		}
+        sortedKmlLayers := strings.Split(cmdArgs.kmlLayers, ",")
+        sort.Slice(sortedKmlLayers, func(i, j int) bool {
+            // order builders for deterministic ordering of KML layers
+            return sortedKmlLayers[i] < sortedKmlLayers[j]
+        })
 
-		var tracker kml.KmlTracker
-		switch cmdArgs.kmlKind {
-		case cmdFlagTracksKindStd:
-			tracker = &kml.GxTracker{
-				Name: "Standard",
-				Builders: []kml.GxKmlBuilder{
-					&kml.PathBuilder{
-						Extrude: true,
-						Color:   color.RGBA{R: 217, G: 51, B: 255},
-					},
-					&kml.CameraTrackBuilder{
-						AddBankAngle: !cmdArgs.noBanking,
-						VerboseFlag:  cmdArgs.verboseOperation,
-					},
-					&kml.VectorBuilder{},
-				},
-			}
-		case cmdFlagTracksKindPlacemark:
-			tracker = &kml.GxTracker{
-				Name:     "Map Tour",
-				Builders: []kml.GxKmlBuilder{&kml.PlacemarkBuilder{}},
-			}
-		case cmdFlagTracksKindCamera:
-			tracker = &kml.GxTracker{
-				Name: "Birds-eye",
-				Builders: []kml.GxKmlBuilder{
-					&kml.CameraTrackBuilder{
-						AddBankAngle: !cmdArgs.noBanking,
-						VerboseFlag:  cmdArgs.verboseOperation,
-					},
-				},
-			}
-		default:
-			return fmt.Errorf("unrecognized kmlKind(%s); supported: %v", cmdArgs.kmlKind,
-				[]string{cmdFlagTracksKindCamera, cmdFlagTracksKindPlacemark})
-		}
+        var kmlBuilders []kml.GxKmlBuilder
+        for _, kmlLayer := range sortedKmlLayers {
+            var kmlBuilder kml.GxKmlBuilder
+            switch kmlLayer {
+            case cmdFlagTracksLayerCamera:
+                kmlBuilder = &builders.CameraBuilder{
+                    AddBankAngle: !cmdArgs.noBanking,
+                    VerboseFlag:  cmdArgs.verboseOperation,
+                }
+            case cmdFlagTracksLayerPath:
+                kmlBuilder = &builders.PathBuilder{
+                    Extrude: true,
+                    Color:   color.RGBA{R: 217, G: 51, B: 255},
+                }
+            case cmdFlagTracksLayerPlacemark:
+                kmlBuilder = &builders.PlacemarkBuilder{}
+            case cmdFlagTracksLayerVector:
+                kmlBuilder = &builders.VectorBuilder{}
+            default:
+                return fmt.Errorf("unrecognized kmlLayer(%s); supported: %v", kmlLayer,
+                    strings.Join(cmdFlagTracksLayersSupported, ","))
+            }
+            kmlBuilders = append(kmlBuilders, kmlBuilder)
+        }
 
-		tc := iaeroapi.TracksConverter{
-			TailNumber:  cmdArgs.tailNumber,
-			CutoffTime:  cmdArgs.cutoffTime,
-			FlightCount: cmdArgs.flightCount,
-		}
+        tc := iaeroapi.TracksConverter{
+            TailNumber:  cmdArgs.tailNumber,
+            CutoffTime:  cmdArgs.cutoffTime,
+            FlightCount: cmdArgs.flightCount,
+            Api:         aeroApi,
+        }
 
-		aeroKmls, createKmlErr := tc.Convert(aeroApi, tracker)
-		if createKmlErr != nil {
-			log.Fatalf("couldn't create KMLs: %v", createKmlErr)
-			//notreached
-		}
+        tracker := &kml.GxTracker{Builders: kmlBuilders}
+        aeroKmls, createKmlErr := tc.Convert(tracker)
+        if createKmlErr != nil {
+            log.Fatalf("couldn't create KMLs: %v", createKmlErr)
+            //notreached
+        }
 
-		nKmlDocs := len(aeroKmls)
-		if cmdArgs.verboseOperation || nKmlDocs > 1 {
-			log.Printf("INFO: writing %d %s KML document(s)", nKmlDocs, cmdArgs.kmlKind)
-		}
+        sortedKmlLayersStr := strings.Join(sortedKmlLayers, ",")
 
-		var firstKmlFilename string
-		for _, aeroKml := range aeroKmls {
-			flightTime := aeroKml.StartTime.Format(persistence.FnPrefixTimestampFormat)
-			flightEndUpdate := getTsUpdate(aeroKml.EndTime.Format(persistence.FnPrefixTimestampFormat), flightTime)
+        nKmlDocs := len(aeroKmls)
+        if cmdArgs.verboseOperation || nKmlDocs > 1 {
+            log.Printf("INFO: writing %d %s KML document(s)", nKmlDocs, sortedKmlLayersStr)
+        }
 
-			lft := len(flightTime)
-			saveFn := fmt.Sprintf("%s-%s-%s-%s", cmdArgs.tailNumber, flightTime[2:lft-1], flightEndUpdate[2:], cmdArgs.kmlKind)
-			kmlFilename, writeErr := (&persistence.KmzSaver{
-				FileSaver: persistence.FileSaver{
-					Timestamp:      &commandStartTime,
-					FilenameSuffix: ".kmz",
-				},
-				Assets: aeroKml.KmlAssets,
-			}).SaveNewKmz(saveFn, aeroKml.KmlDoc)
-			if writeErr != nil {
-				log.Fatalf("couldn't write to stdout: %v", writeErr)
-				//notreached
-			}
+        var firstKmlFilename string
+        for _, aeroKml := range aeroKmls {
+            kmzSaver := &persistence.KmzSaver{
+                Saver:  fileBasedAeroApi,
+                Assets: aeroKml.KmlAssets,
+            }
+            flightTimeRange := getTsFromTo(*aeroKml.StartTime, *aeroKml.EndTime)
+            kmlFilename := filepath.Join(
+                fileBasedAeroApi.ArtifactsDir,
+                fmt.Sprintf("fvk_%s-%s-%s.kmz", cmdArgs.tailNumber, flightTimeRange, sortedKmlLayersStr),
+            )
 
-			if firstKmlFilename == "" {
-				firstKmlFilename = kmlFilename
-			}
-		}
+            if writeErr := kmzSaver.Save(kmlFilename, aeroKml.KmlDoc); writeErr != nil {
+                log.Fatalf("couldn't write output artifact(%s): %v", kmlFilename, writeErr)
+                //notreached
+            }
 
-		if cmdArgs.launchFirstKml && firstKmlFilename != "" {
-			if cmdArgs.verboseOperation {
-				log.Printf("INFO: opening(%s) in %s\n", firstKmlFilename, runtime.GOOS)
-			}
-			if openErr := ios.LaunchFile(firstKmlFilename); openErr != nil {
-				log.Fatalf("error returned from launching(%s): %v", firstKmlFilename, openErr)
-				//notreached
-			}
-		}
+            if firstKmlFilename == "" {
+                firstKmlFilename = kmlFilename
+            }
+        }
 
-		return nil
-	},
+        if cmdArgs.launchFirstKml && firstKmlFilename != "" {
+            if cmdArgs.verboseOperation {
+                log.Printf("INFO: opening(%s) in %s\n", firstKmlFilename, runtime.GOOS)
+            }
+            if openErr := ios.LaunchFile(firstKmlFilename); openErr != nil {
+                log.Fatalf("error returned from launching(%s): %v", firstKmlFilename, openErr)
+                //notreached
+            }
+        }
+
+        return nil
+    },
 }
 
-func getAeroApiHttpGetter(isVerbose bool) (aeroapi.GetRequester, error) {
-	httpAeroApi, dotFileErr := aeroapi.HttpApiFromDotFiles(".env.local")
-	if dotFileErr != nil {
-		return nil, dotFileErr
-	}
-	if isVerbose {
-		httpAeroApi.Verbose = isVerbose
-	}
-	return httpAeroApi.Get, nil
+func getAeroApiHttpRetriever(isVerbose bool) (*aeroapi.HttpAeroApi, error) {
+    httpAeroApi, dotFileErr := aeroapi.HttpApiFromDotFiles(".env.local")
+    if dotFileErr != nil {
+        return nil, dotFileErr
+    }
+    if isVerbose {
+        httpAeroApi.Verbose = isVerbose
+    }
+    return httpAeroApi, nil
 }
 
-func parseArgs(cmd *cobra.Command, args []string) (cmdArgs tracksCommandArgs, err error) {
-	if cmdArgs.verboseOperation, err = cmd.Flags().GetBool(cmdFlagRootVerbose); err != nil {
-		return
-	}
-	if cmdArgs.launchFirstKml, err = cmd.Flags().GetBool(cmdFlagTracksLaunch); err != nil {
-		return
-	}
-	if cmdArgs.noBanking, err = cmd.Flags().GetBool(cmdFlagTracksNoBanking); err != nil {
-		return
-	}
-	if cmdArgs.saveResponses, err = cmd.Flags().GetBool(cmdFlagTracksSaveResponses); err != nil {
-		return
-	}
+func parseArgs(cmd *cobra.Command) (cmdArgs tracksCommandArgs, err error) {
+    if cmdArgs.verboseOperation, err = cmd.Flags().GetBool(cmdFlagRootVerbose); err != nil {
+        return
+    }
+    if cmdArgs.launchFirstKml, err = cmd.Flags().GetBool(cmdFlagTracksLaunch); err != nil {
+        return
+    }
+    if cmdArgs.noBanking, err = cmd.Flags().GetBool(cmdFlagTracksNoBanking); err != nil {
+        return
+    }
+    if cmdArgs.saveResponses, err = cmd.Flags().GetBool(cmdFlagTracksSaveArtifacts); err != nil {
+        return
+    }
 
-	if cmdArgs.tailNumber, err = cmd.Flags().GetString(cmdFlagTracksTailNumber); err != nil {
-		return
-	}
-	if cmdArgs.fromSavedResponses, err = cmd.Flags().GetString(cmdFlagTracksFromSavedResponses); err != nil {
-		return
-	}
-	if cmdArgs.outputDir, err = cmd.Flags().GetString(cmdFlagTracksOutputDir); err != nil {
-		return
-	}
-	if cmdArgs.kmlKind, err = cmd.Flags().GetString(cmdFlagTracksKind); err != nil {
-		return
-	}
-	var cutoffTimeString string
-	if cutoffTimeString, err = cmd.Flags().GetString(cmdFlagTracksCutoffTime); err != nil {
-		return
-	}
-	if cutoffTimeString != "" {
-		var toTime time.Time
-		if toTime, err = time.Parse(time.RFC3339, cutoffTimeString); err != nil {
-			return
-		}
-		cmdArgs.cutoffTime = &toTime
-	}
+    if cmdArgs.tailNumber, err = cmd.Flags().GetString(cmdFlagTracksTailNumber); err != nil {
+        return
+    }
+    if cmdArgs.fromSavedResponses, err = cmd.Flags().GetString(cmdFlagTracksFromArtifacts); err != nil {
+        return
+    }
+    if cmdArgs.artifactsDir, err = cmd.Flags().GetString(cmdFlagTracksArtifactsDir); err != nil {
+        return
+    }
+    if cmdArgs.kmlLayers, err = cmd.Flags().GetString(cmdFlagTracksLayers); err != nil {
+        return
+    }
+    var cutoffTimeString string
+    if cutoffTimeString, err = cmd.Flags().GetString(cmdFlagTracksCutoffTime); err != nil {
+        return
+    }
+    if cutoffTimeString != "" {
+        var toTime time.Time
+        if toTime, err = time.Parse(time.RFC3339, cutoffTimeString); err != nil {
+            return
+        }
+        cmdArgs.cutoffTime = &toTime
+    }
 
-	if cmdArgs.flightCount, err = cmd.Flags().GetInt(cmdFlagTracksFlightCount); err != nil {
-		return
-	}
+    if cmdArgs.flightCount, err = cmd.Flags().GetInt(cmdFlagTracksFlightCount); err != nil {
+        return
+    }
 
-	return
+    if _, artifactsDirExistsErr := os.Stat(cmdArgs.artifactsDir); os.IsNotExist(artifactsDirExistsErr) {
+        err = fmt.Errorf("artifacts directory(%s) not found; either create it or use the '%s' option to change: %w",
+            cmdArgs.artifactsDir, cmdFlagTracksArtifactsDir, artifactsDirExistsErr)
+        return
+    }
+
+    return
 }
 
-// getTsUpdate returns the suffix of tsUpdate which is not in common with tsBase
-// example: { 23010203040506Z, 23010203050506Z } => 50506Z ('5' differs with '4' in tsBase)
-func getTsUpdate(tsUpdate, tsBase string) string {
-	i := 0
-	for i < len(tsBase) && i < len(tsUpdate) && tsBase[i] == tsUpdate[i] {
-		i++
-	}
-	return tsUpdate[i:]
+// GetTsFromTo returns a string representation of a time range using fnPrefixTimestampFormat
+// to format the "from" time, and a subsequence of that for the "to" time, with leading common
+// prefix removed.  Example:
+//
+// { 2023010203040506Z, 2023010203050506Z } => "23010203040506-50506Z" ('5' differs with '4' in tsBase)
+func getTsFromTo(from, to time.Time) string {
+    fromFmt := from.Format(fnPrefixTimestampFormat)[2:]
+    toFmt := to.Format(fnPrefixTimestampFormat)[2:]
+
+    i := 0
+    for i < len(fromFmt) && i < len(toFmt) && fromFmt[i] == toFmt[i] {
+        i++
+    }
+    return fmt.Sprintf("%s-%s", fromFmt, toFmt[i:])
 }
+
+const fnPrefixTimestampFormat = "20060102150405Z"

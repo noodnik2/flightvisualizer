@@ -1,5 +1,6 @@
 
 OUT_DIR=dist
+TMP_DIR=tmp
 APP_NAME=fviz
 GO=go
 
@@ -18,7 +19,7 @@ run: ## Run the executable passing it the supplied arguments
 	$(GO) run ./... $(ARGS)
 
 test: ## Run the tests
-	$(GO) test .
+	$(GO) test ./...
 
 clean: ## Remove the built and dependency artifact(s)
-	rm -rf vendor $(OUT_DIR)
+	rm -rf vendor $(OUT_DIR) $(TMP_DIR)

@@ -24,17 +24,17 @@ forward, as it contains a secret.
 
 ## Example Invocations
 
-Here's a simple example of invoking `fviz` in which a KML visualization of a "mock" flight is created
-and immediately "launched."  
+Here's a simple example of invoking `fviz` in which a KML visualization of previously saved
+flight tracks is created and immediately "launched."  
 
 Notes:
 
-- No calls to [AeroAPI] are made when using mock data
+- No calls to [AeroAPI] are made when using previously saved flights
 - Launching the KML file will invoke the application registered for `.kml` files in your operating system
   (such as [Google Earth Pro](https://www.google.com/earth/versions/#earth-pro))
 
 ```shell
-$ fviz tracks N12345 --mock --launch
+$ fviz tracks N12345 --fromSavedResponses savedfiles/flights_N605WM-1683866868-adhoc-2431p_track.json --launch
 ```
 
 Another example below leverages more of the available options:
@@ -42,17 +42,17 @@ Another example below leverages more of the available options:
 ```shell
 $ dist/fviz tracks N605WM --verbose --cutoffTime 2023-05-11T22:40:00-07:00 --kind camera --outputDir kml --saveResponses --flightCount 3
 2023/05/19 15:55:07 INFO: requesting from endpoint(/flights/N605WM?&end=2023-05-11T22:40:00-07:00)
-2023/05/19 15:55:08 INFO: creating file: kml/230519155507Z-flights_N605WM_end_2023-05-11T22_40_00-07_00.json
+2023/05/19 15:55:08 INFO: creating file: savedfiles/230519155507Z-flights_N605WM_end_2023-05-11T22_40_00-07_00.json
 2023/05/19 15:55:08 INFO: requesting from endpoint(/flights/N605WM-1683869494-adhoc-1188p/track)
-2023/05/19 15:55:08 INFO: creating file: kml/230519155507Z-flights_N605WM-1683869494-adhoc-1188p_track.json
+2023/05/19 15:55:08 INFO: creating file: savedfiles/230519155507Z-flights_N605WM-1683869494-adhoc-1188p_track.json
 2023/05/19 15:55:08 INFO: requesting from endpoint(/flights/N605WM-1683869013-adhoc-1394p/track)
-2023/05/19 15:55:09 INFO: creating file: kml/230519155507Z-flights_N605WM-1683869013-adhoc-1394p_track.json
+2023/05/19 15:55:09 INFO: creating file: savedfiles/230519155507Z-flights_N605WM-1683869013-adhoc-1394p_track.json
 2023/05/19 15:55:09 INFO: requesting from endpoint(/flights/N605WM-1683866868-adhoc-2431p/track)
-2023/05/19 15:55:09 INFO: creating file: kml/230519155507Z-flights_N605WM-1683866868-adhoc-2431p_track.json
+2023/05/19 15:55:09 INFO: creating file: savedfiles/230519155507Z-flights_N605WM-1683866868-adhoc-2431p_track.json
 2023/05/19 15:55:09 INFO: writing 3 camera KML document(s)
-2023/05/19 15:55:09 INFO: creating file: kml/230519155507Z-N605WM-230512053129-5Z-camera.kmz
-2023/05/19 15:55:09 INFO: creating file: kml/230519155507Z-N605WM-230512052328-2Z-camera.kmz
-2023/05/19 15:55:09 INFO: creating file: kml/230519155507Z-N605WM-230512050306-2Z-camera.kmz
+2023/05/19 15:55:09 INFO: creating file: savedfiles/230519155507Z-N605WM-230512053129-5Z-camera.kmz
+2023/05/19 15:55:09 INFO: creating file: savedfiles/230519155507Z-N605WM-230512052328-2Z-camera.kmz
+2023/05/19 15:55:09 INFO: creating file: savedfiles/230519155507Z-N605WM-230512050306-2Z-camera.kmz
 ```
 
 This example creates "camera" visualizations for the three flights prior to the stated "cutoff time",

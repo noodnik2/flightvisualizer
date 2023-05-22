@@ -1,6 +1,8 @@
 vendor/
 dist/
+tmp/
 .env.local
 **/.idea
 **/*.iml
-savedfiles/
+artifacts/**
+!artifacts/README.md
