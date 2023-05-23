@@ -39,8 +39,6 @@ const cmdFlagTracksLayerVector = "vector"
 var cmdFlagTracksLayersDefault = []string{cmdFlagTracksLayerCamera, cmdFlagTracksLayerPath, cmdFlagTracksLayerVector}
 var cmdFlagTracksLayersSupported = []string{cmdFlagTracksLayerCamera, cmdFlagTracksLayerPath, cmdFlagTracksLayerPlacemark, cmdFlagTracksLayerVector}
 
-const kmzArtifactFilePrefix = "fviz_"
-
 func init() {
     rootCmd.AddCommand(versionCmd)
     versionCmd.Flags().BoolP(cmdFlagTracksLaunch, "l", false, "Launch the KML file (depicting the track of the most recent flight retrieved) once created")

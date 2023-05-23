@@ -8,9 +8,9 @@ help: ## Print this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | grep -v fgrep | sed 's/\(.*\):.*## \(.*\)/\1 - \2/' | sort
 
 update: ## Update & organize the module dependency tree
-	$(GO) mod vendor
-	$(GO) mod download
 	$(GO) mod tidy
+	$(GO) mod download
+	$(GO) mod vendor
 
 build: ## Build the executable using the currently downloaded dependencies
 	$(GO) build -o $(OUT_DIR)/$(APP_NAME) .

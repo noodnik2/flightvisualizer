@@ -3,12 +3,12 @@ package kml
 import (
     "bytes"
     "fmt"
-    "github.com/noodnik2/flightvisualizer/internal/kml/builders"
     "strings"
     "time"
 
     gokml "github.com/twpayne/go-kml/v3"
 
+    "github.com/noodnik2/flightvisualizer/internal/kml/builders"
     "github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 

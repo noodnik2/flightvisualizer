@@ -10,6 +10,33 @@ a "cutoff time" prior to which to consider.  If no "cutoff time" is given, the c
 
 Flight Visualizer is packaged into a standalone CLI command named `fviz`.
 
+## Building From Source or Contributing
+
+The "home" source control repository of Flight Visualizer is on GitHub at
+[noodnik2/flightvisualizer](https://github.com/noodnik2/flightvisualizer). 
+It was written in, and leverages some relatively recent features of [golang](https://go.dev/).
+It's initial test suite uses `go1.20.2 darwin/amd64` though it should work on comparable
+distributions as well.
+
+On a fresh clone / fork of the repository, you should be able to...
+
+<details>
+  <summary><code>$ make clean update build test</code></summary>
+
+```shell
+$ make clean update build test
+rm -rf vendor dist tmp
+go mod download
+go mod vendor
+go mod tidy
+go build -o dist/fviz .
+go test ./...
+ok      github.com/noodnik2/flightvisualizer/internal/aeroapi   0.211s
+ok      github.com/noodnik2/flightvisualizer/internal/kml       0.320s
+ok      github.com/noodnik2/flightvisualizer/pkg/aeroapi        0.372s
+```
+</details>
+
 ## Setup / Configuration
 
 In order to retrieve flight information using [AeroAPI], you'll need to obtain and install an

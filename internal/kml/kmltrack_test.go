@@ -2,11 +2,11 @@ package kml
 
 import (
     "fmt"
-    "github.com/noodnik2/flightvisualizer/internal/kml/builders"
     "testing"
 
     "github.com/stretchr/testify/require"
 
+    "github.com/noodnik2/flightvisualizer/internal/kml/builders"
     "github.com/noodnik2/flightvisualizer/pkg/aeroapi"
     "github.com/noodnik2/flightvisualizer/testfixtures"
 )

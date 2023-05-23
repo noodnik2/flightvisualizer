@@ -43,10 +43,3 @@ func (c *FileAeroApi) Save(fileName string, contents []byte) error {
     }
     return c.FileSaver.Save(fileName, contents)
 }
-
-//func (c *FileAeroApi) resolvePathIfNeeded(fileName string) string {
-//    if filepath.Dir(fileName) != "" {
-//        return fileName
-//    }
-//    return filepath.Join(c.ArtifactsDir, fileName)
-//}
