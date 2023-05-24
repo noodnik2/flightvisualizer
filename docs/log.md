@@ -6,3 +6,6 @@ reminders & general internal information related to progress and development of 
 ## Resources
 ### Symbols
 - [Google Map Icons](http://kml4earth.appspot.com/icons.html)
+### Forums
+- [Google Earth Support](https://support.google.com/earth)
+- [Google Maps Support](https://support.google.com/maps)
