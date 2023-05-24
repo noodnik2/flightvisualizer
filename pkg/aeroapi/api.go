@@ -81,8 +81,8 @@ func (a *RetrieverSaverApiImpl) GetFlightIds(tailNumber string, cutoffTime *time
 
     var flightIds []string
     for i, f := range flights.Flights {
-        if flightCount != 0 && i >= flightCount {
-            // Assuming that first entries returned are most recent; as the AeroAPI doc says: "approximately 14 days
+        if flightCount > 0 && i >= flightCount {
+            // Assumes that first entries returned are most recent; as the AeroAPI doc says: "approximately 14 days
             // of recent and scheduled flight information is returned, ordered by scheduled_out (or scheduled_off
             // if scheduled_out is missing) descending"
             break

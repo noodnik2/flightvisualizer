@@ -63,6 +63,7 @@ func TestFileAeroApi_GetUris(t *testing.T) {
     testCases := []struct {
         name                 string
         artifactsDir         string
+        flightIdsFileName    string
         flightId             string
         tailNumber           string
         cutoffTime           *time.Time
@@ -93,13 +94,21 @@ func TestFileAeroApi_GetUris(t *testing.T) {
             expectedFlightIdsUri: "cDir/fvf_cT#_cutoff_00010101T000000Z.json",
             expectedTrackUri:     "cDir/fvt_cFid.json",
         },
+        {
+            name:                 "with FlightIdsFileName",
+            artifactsDir:         "dDir",
+            flightIdsFileName:    "f99.json",
+            flightId:             "dFid",
+            expectedFlightIdsUri: "dDir/f99.json",
+            expectedTrackUri:     "dDir/fvt_dFid.json",
+        },
     }
 
     for _, tc := range testCases {
         t.Run(tc.name, func(t *testing.T) {
             requirer := require.New(t)
 
-            fileAeroApi := &FileAeroApi{ArtifactsDir: tc.artifactsDir}
+            fileAeroApi := &FileAeroApi{ArtifactsDir: tc.artifactsDir, FlightIdsFileName: tc.flightIdsFileName}
             requirer.Equal(tc.expectedFlightIdsUri, fileAeroApi.GetFlightIdsUri(tc.tailNumber, tc.cutoffTime))
             requirer.Equal(tc.expectedTrackUri, fileAeroApi.GetTrackForFlightUri(tc.flightId))
         })

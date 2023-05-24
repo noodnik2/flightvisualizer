@@ -10,20 +10,28 @@ import (
 )
 
 type FileAeroApi struct {
-    Verbose      bool
-    ArtifactsDir string
+    ArtifactsDir      string
+    FlightIdsFileName string
     persistence.FileLoader
     persistence.FileSaver
 }
 
 func (c *FileAeroApi) GetFlightIdsUri(tailNumber string, cutoffTime *time.Time) string {
-    var base string
-    if cutoffTime == nil {
-        base = fmt.Sprintf("fvf_%s.json", tailNumber)
+    var fileName string
+    if c.FlightIdsFileName != "" {
+        fileName = c.FlightIdsFileName
     } else {
-        base = fmt.Sprintf("fvf_%s_cutoff_%s.json", tailNumber, cutoffTime.Format("20060102T150405Z0700"))
+        if cutoffTime == nil {
+            fileName = fmt.Sprintf("fvf_%s.json", tailNumber)
+        } else {
+            fileName = fmt.Sprintf("fvf_%s_cutoff_%s.json", tailNumber, cutoffTime.Format("20060102T150405Z0700"))
+        }
     }
-    return filepath.Join(c.ArtifactsDir, base)
+    if filepath.Dir(fileName) != "." {
+        // don't touch it if it already has a directory part
+        return fileName
+    }
+    return filepath.Join(c.ArtifactsDir, fileName)
 }
 
 func (c *FileAeroApi) GetTrackForFlightUri(flightId string) string {
@@ -31,15 +39,11 @@ func (c *FileAeroApi) GetTrackForFlightUri(flightId string) string {
 }
 
 func (c *FileAeroApi) Load(fileName string) ([]byte, error) {
-    if c.Verbose {
-        log.Printf("INFO: requesting from file(%s)\n", fileName)
-    }
+    log.Printf("INFO: reading from file(%s)\n", fileName)
     return c.FileLoader.Load(fileName)
 }
 
 func (c *FileAeroApi) Save(fileName string, contents []byte) error {
-    if c.Verbose {
-        log.Printf("INFO: saving to file(%s)\n", fileName)
-    }
+    log.Printf("INFO: saving to file(%s)\n", fileName)
     return c.FileSaver.Save(fileName, contents)
 }
