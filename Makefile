@@ -16,7 +16,7 @@ build-macos: ## Builds the executable for MacOS
 	$(MAKE) build GOOS=darwin OUT_DIR=$(OUT_DIR)/macos
 
 build-windows: ## Builds the executable for Windows
-	$(MAKE) build GOOS=windows OUT_DIR=$(OUT_DIR)/windows
+	$(MAKE) build GOOS=windows OUT_DIR=$(OUT_DIR)/windows APP_NAME=$(APP_NAME).exe
 
 build-linux: ## Builds the executable for Linux
 	$(MAKE) build GOOS=linux OUT_DIR=$(OUT_DIR)/linux

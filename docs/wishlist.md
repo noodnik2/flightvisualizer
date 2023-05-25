@@ -12,8 +12,8 @@ tracking data and/or _multiple targets_ for orchestrating flight visualizations 
 potential candidates identified below).
 
 In addition to expanding the number of sources and target output formats, conformance to
-data exchange standards (such as [FIXM](https://fixm.aero/)) is a goal to increase 
-interoperability with, and usefulness of Flight Visualizer. 
+data exchange standards (such as [AIXM](https://www.aixm.aero/) and [FIXM](https://fixm.aero/))
+is a goal to increase interoperability with, and usefulness of Flight Visualizer. 
 
 ## Support for "Live Visualization"
 
