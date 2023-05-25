@@ -174,6 +174,14 @@ produce visualizations _(including in real-time!)_ of simulated flights in [Goog
   - [LiveCam Support](https://github.com/noodnik2/MSFS2020-PilotPathRecorder/blob/master/README-kmlcam.md) 
   - [LiveCam Q&A](https://github.com/noodnik2/MSFS2020-PilotPathRecorder/blob/master/README-kmlcam-QandA.md)
 
+## License & Contributions
+
+- Use of this source code is governed by an Apache-2.0 license that can be found
+  in the [LICENSE](./LICENSE) file
+- Contributions to this project are encouraged, and guidelines are established
+  in the [CONTRIBUTIONS](./CONTRIBUTING.md) file
+  
+
 [AeroAPI]: https://flightaware.com/commercial/aeroapi
 [KML]: https://developers.google.com/kml
 [.kmz]: https://www.google.com/earth/outreach/learn/packaging-content-in-a-kmz-file/
