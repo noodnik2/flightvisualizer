@@ -14,6 +14,9 @@ a "cutoff time" prior to which to consider.  If no "cutoff time" is given, the c
 
 Flight Visualizer is packaged into a standalone CLI command named `fviz`.
 
+The [Makefile](./Makefile) target `build-all` creates versions for popular architectures,
+including MacOs, Linux and Windows.  
+
 ## Building From Source or Contributing
 
 The "home" source control repository of Flight Visualizer is on GitHub at
@@ -159,13 +162,19 @@ an eye on while making active use of it.
 
 ## See Also
 
-If you like this type of thing and are a user of [Microsoft Flight Simulator], be sure to check out a
-related project that uses KML to produce visualizations _(including in real-time!)_ of simulated flights
-in [Google Earth]:
+Be sure also to check out other `README` and `.md` (markdown) files located in sub-folders of this repository,
+as they contain additional relevant context.  One such file of note is the [wishlist](docs/wishlist.md).
+
+Please don't hesitate to volunteer your thoughts or ideas regarding enhancements to or collaborations on
+Flight Visualizer!
+
+### Visualization of Simulated Flights
+
+If you're a user of [Microsoft Flight Simulator], be sure to check out a related project that uses KML to
+produce visualizations _(including in real-time!)_ of simulated flights in [Google Earth]:
 - [MSFS2020 Pilot Path Recorder](https://github.com/noodnik2/MSFS2020-PilotPathRecorder) and related pages:
   - [LiveCam Support](https://github.com/noodnik2/MSFS2020-PilotPathRecorder/blob/master/README-kmlcam.md) 
   - [LiveCam Q&A](https://github.com/noodnik2/MSFS2020-PilotPathRecorder/blob/master/README-kmlcam-QandA.md)
-
 
 [AeroAPI]: https://flightaware.com/commercial/aeroapi
 [KML]: https://developers.google.com/kml
