@@ -8,6 +8,13 @@ enabling it to be "played back" in a KML client renderer such as [Google Earth].
 All that's needed to identify (a) flight(s) to [AeroAPI] is an aircraft's "tail number," and optionally
 a "cutoff time" prior to which to consider.  If no "cutoff time" is given, the current time will be used.
 
+### Example
+
+```shell
+$ fviz tracks --tailNumber N8050J --cutoffTime 2023-05-22T19:45:00-04:00 --launch
+$ fviz tracks --tailNumber N81497 --flightCount 1 --launch
+```
+
 ## Packaging
 
 Flight Visualizer is packaged into a standalone CLI command named `fviz`.
@@ -59,9 +66,9 @@ By default, `fviz` assumes the artifacts it reads & writes should be located in 
 directory.  Therefore, you should always have such a sub-folder underneath the current directory when running `fviz`.  Alternatively,
 you can use the `--artifactsDir` option to specify the location for artifacts each time you invoke `fviz`.
 
-## Example Invocations
+## More Example Invocations
 
-Some example invocations of `fviz` are presented below to help jumpstart the uninitiated user.
+Additional example invocations of `fviz` are presented below to help jumpstart the uninitiated user.
 Additional use cases can be revealed through exploration of the complete set of options available.
 Running the command without options, or with an incomplete set of options, reveals the set of available options. 
 

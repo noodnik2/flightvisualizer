@@ -9,3 +9,4 @@ artifacts.bak/**
 !artifacts/README.md
 !artifacts/fvf_N335SP_cutoff-20230523T220000Z.json
 !artifacts/fvt_N335SP-1684874159-adhoc-1864p.json
+!artifacts/fvk__230523203550Z-22102Z_camera-path-vector.kmz

@@ -23,6 +23,15 @@ $ fviz tracks --fromArtifacts fvf_N335SP_cutoff-20230523T220000Z.json --launch
 ```
 
 Assuming [Google Earth Pro] is installed properly, the flight visualization should immediately
-load and start displaying.
+load and start displaying.  Alternatively, the KML visualization (output) `.kmz` file can be
+loaded directly into the renderer.  For example, on a MacOs, this can be done from the command-
+line - i.e.:
+
+```shell
+$ open artifacts/fvk__230523203550Z-22102Z_camera-path-vector.kmz
+```
+
+Or by loading the file directly the file into the renderer (e.g., any version of [Google Earth]):
 
 [Google Earth Pro]: https://www.google.com/earth/versions/#earth-pro
+[Google Earth]: https://www.google.com/earth/versions

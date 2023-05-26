@@ -21,6 +21,15 @@ build-windows: ## Builds the executable for Windows
 build-linux: ## Builds the executable for Linux
 	$(MAKE) build GOOS=linux OUT_DIR=$(OUT_DIR)/linux
 
+package:	isclean update test build-all ## build a distribution package from a committed state
+	mkdir -p dist/package/flightvisualizer
+	mv dist/{macos,windows,linux} dist/package/flightvisualizer
+	cp .env.local.template dist/package/flightvisualizer
+	cp .env.local.template dist/package/flightvisualizer/.env.local
+	cp -pR artifacts dist/package/flightvisualizer
+	cp docs/package-readme.md dist/package/flightvisualizer/README.md
+	(cd dist/package; zip -r ../flightvisualizer.zip .)
+
 build-all:	build-macos build-windows build-linux  ## Builds the executable for all supported architectures
 
 build: ## Build the executable using the currently downloaded dependencies and architecture
@@ -35,3 +44,7 @@ test: ## Run the tests
 
 clean: ## Remove the built and dependency artifact(s)
 	rm -rf vendor $(OUT_DIR) $(TMP_DIR)
+
+isclean: ## this target fails if there are uncommitted files
+	git diff --exit-code
+	git diff --exit-code --staged
