@@ -33,12 +33,12 @@ type Position struct {
 }
 
 type Api interface {
-    GetFlightIds(tailNumber string, cutoffTime *time.Time, flightCount int) ([]string, error)
+    GetFlightIds(tailNumber string, cutoffTime time.Time, flightCount int) ([]string, error)
     GetTrackForFlightId(flightId string) (*Track, error)
 }
 
 type ArtifactLocator interface {
-    GetFlightIdsUri(tailNumber string, cutoffTime *time.Time) string
+    GetFlightIdsUri(tailNumber string, cutoffTime time.Time) string
     GetTrackForFlightUri(flightId string) string
 }
 
@@ -60,7 +60,7 @@ type RetrieverSaverApiImpl struct {
 // GetFlightIds returns the AeroAPI identifier(s) of the flight(s) specified by the parameters
 // cutoffTime (optional) - most recent time for a flight to be considered
 // flightCount (optional) - max number of (most recent) flights to consider
-func (a *RetrieverSaverApiImpl) GetFlightIds(tailNumber string, cutoffTime *time.Time, flightCount int) ([]string, error) {
+func (a *RetrieverSaverApiImpl) GetFlightIds(tailNumber string, cutoffTime time.Time, flightCount int) ([]string, error) {
     endpoint := a.Retriever.GetFlightIdsUri(tailNumber, cutoffTime)
     responseBytes, getErr := a.Retriever.Load(endpoint)
     if getErr != nil {

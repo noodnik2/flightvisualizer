@@ -21,7 +21,6 @@ func TestConvert(t *testing.T) {
 			name: "simple",
 			TracksConverter: TracksConverter{
 				TailNumber:  "tail#",
-				CutoffTime:  nil,
 				FlightCount: 1,
 				Api: &aeroapi.RetrieverSaverApiImpl{
 					Retriever: &aeroapi.MockArtifactRetriever{

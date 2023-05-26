@@ -39,9 +39,9 @@ func HttpApiFromDotFiles(dotFiles ...string) (*HttpAeroApi, error) {
     return api, nil
 }
 
-func (c *HttpAeroApi) GetFlightIdsUri(tailNumber string, cutoffTime *time.Time) string {
+func (c *HttpAeroApi) GetFlightIdsUri(tailNumber string, cutoffTime time.Time) string {
     endpoint := fmt.Sprintf("/flights/%s", tailNumber)
-    if cutoffTime != nil {
+    if !cutoffTime.IsZero() {
         endpoint += fmt.Sprintf("?&end=%s", cutoffTime.Format(time.RFC3339))
     }
     return endpoint

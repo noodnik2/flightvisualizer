@@ -16,15 +16,15 @@ type FileAeroApi struct {
     persistence.FileSaver
 }
 
-func (c *FileAeroApi) GetFlightIdsUri(tailNumber string, cutoffTime *time.Time) string {
+func (c *FileAeroApi) GetFlightIdsUri(tailNumber string, cutoffTime time.Time) string {
     var fileName string
     if c.FlightIdsFileName != "" {
         fileName = c.FlightIdsFileName
     } else {
-        if cutoffTime == nil {
+        if cutoffTime.IsZero() {
             fileName = fmt.Sprintf("fvf_%s.json", tailNumber)
         } else {
-            fileName = fmt.Sprintf("fvf_%s_cutoff_%s.json", tailNumber, cutoffTime.Format("20060102T150405Z0700"))
+            fileName = fmt.Sprintf("fvf_%s_cutoff-%s.json", tailNumber, cutoffTime.Format("20060102T150405Z0700"))
         }
     }
     if filepath.Dir(fileName) != "." {

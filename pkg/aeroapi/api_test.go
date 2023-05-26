@@ -20,7 +20,7 @@ func TestGetFlightIdsRequestGeneration(t *testing.T) {
     retriever := &MockArtifactRetriever{
         Contents: []byte(`{}`),
     }
-    _, _ = (&RetrieverSaverApiImpl{Retriever: retriever}).GetFlightIds("tail#", nil, 0)
+    _, _ = (&RetrieverSaverApiImpl{Retriever: retriever}).GetFlightIds("tail#", time.Time{}, 0)
 
     requirer := require.New(t)
     requirer.Equal([]string{"/fl/tail#"}, retriever.RequestedEndpoints)
@@ -33,7 +33,7 @@ func TestGetFlightIdsResponseProcessing(t *testing.T) {
         name              string
         retriever         ArtifactRetriever
         assertions        func(*require.Assertions, *testResponseSaver)
-        cutoffTime        *time.Time
+        cutoffTime        time.Time
         flightCount       int
         expectedFlightIds []string
         expectedErrors    []string
@@ -124,7 +124,7 @@ func TestGetTrackForFlightId(t *testing.T) {
     testCases := []testCaseDef{
         {
             name:                  "single empty track from JSON",
-            retriever:             &MockArtifactRetriever{Contents: []byte(`{"positions": [{}]}`)}, // newTestStringGetter(`{"positions": [{}]}`),
+            retriever:             &MockArtifactRetriever{Contents: []byte(`{"positions": [{}]}`)},
             expectedPositionCount: 1,
         },
         {

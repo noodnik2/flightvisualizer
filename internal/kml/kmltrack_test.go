@@ -19,10 +19,10 @@ func TestNewKmlTrack(t *testing.T) {
 
     testCases := []testCaseDef{
         {
-            tracker: &GxTracker{Builders: []GxKmlBuilder{&builders.PlacemarkBuilder{}}},
+            tracker: &GxTracker{Builders: []builders.GxKmlBuilder{&builders.PlacemarkBuilder{}}},
         },
         {
-            tracker: &GxTracker{Builders: []GxKmlBuilder{&builders.CameraBuilder{}}},
+            tracker: &GxTracker{Builders: []builders.GxKmlBuilder{&builders.CameraBuilder{}}},
         },
     }
 

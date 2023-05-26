@@ -11,7 +11,7 @@ type MockArtifactRetriever struct {
     RequestedEndpoints []string
 }
 
-func (*MockArtifactRetriever) GetFlightIdsUri(tailNumber string, _ *time.Time) string {
+func (*MockArtifactRetriever) GetFlightIdsUri(tailNumber string, _ time.Time) string {
     return "/fl/" + tailNumber
 }
 

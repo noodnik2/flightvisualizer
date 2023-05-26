@@ -2,12 +2,20 @@ package builders
 
 import (
     gokml "github.com/twpayne/go-kml/v3"
+
+    "github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 
 // KmlProduct contains the top-level KML model element and the assets it references
 type KmlProduct struct {
     Root   gokml.Element
     Assets map[string]any
+}
+
+// GxKmlBuilder can build a KmlProduct from a list of raw AeroAPI positions
+type GxKmlBuilder interface {
+    Name() string
+    Build(positions []aeroapi.Position) *KmlProduct
 }
 
 const feetPerMeter = 3.28084

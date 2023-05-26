@@ -26,15 +26,9 @@ type KmlTracker interface {
     Generate(*aeroapi.Track) (*KmlTrack, error)
 }
 
-// GxKmlBuilder can build a KmlProduct from a list of raw AeroAPI positions
-type GxKmlBuilder interface {
-    Name() string
-    Build(positions []aeroapi.Position) *builders.KmlProduct
-}
-
 // GxTracker is a named set of GxKmlBuilder instances
 type GxTracker struct {
-    Builders []GxKmlBuilder
+    Builders []builders.GxKmlBuilder
 }
 
 func (gxt *GxTracker) Generate(aeroTrack *aeroapi.Track) (*KmlTrack, error) {
