@@ -11,15 +11,19 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
-
-      - name: Test
-        run: go test -v ./...
+      - name: Install dependencies
+        run: go get .
+      - name: Test with Go
+        run: go test -json > TestResults-${{ env.GO_VERSION }}.json
+      - name: Upload Go test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: Go-results-${{ env.GO_VERSION }}
+          path: TestResults-${{ env.GO_VERSION }}.json
