@@ -21,9 +21,4 @@ jobs:
       - name: Install dependencies
         run: go get .
       - name: Test with Go
-        run: go test -json > TestResults-${{ env.GO_VERSION }}.json
-      - name: Upload Go test results
-        uses: actions/upload-artifact@v3
-        with:
-          name: Go-results-${{ env.GO_VERSION }}
-          path: TestResults-${{ env.GO_VERSION }}.json
+        run: go test ./...
