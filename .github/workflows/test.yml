@@ -22,3 +22,10 @@ jobs:
         run: go get .
       - name: Test with Go
         run: go test ./...
+      - name: Super Lint
+        uses: docker://github/super-linter:v3
+        env:
+          # TODO change VALIDATE_ALL_CODEBASE to false once we've established a baseline
+          VALIDATE_ALL_CODEBASE: true
+          # TODO change to main; WHY IS THIS HERE ANYWAYS????
+          DEFAULT_BRANCH: mock-output-folder
