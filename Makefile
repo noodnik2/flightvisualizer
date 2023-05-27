@@ -42,7 +42,10 @@ run: ## Run the executable passing it the supplied arguments
 test: ## Run the tests
 	$(GO) test ./...
 
-clean: ## Remove the built and dependency artifact(s)
+clean: ## Remove the build and dependency artifact(s); backup user artifact(s) before removing them
+	mkdir -p artifacts.bak
+	cp artifacts/* artifacts.bak
+	git clean -f -x artifacts
 	rm -rf vendor $(OUT_DIR) $(TMP_DIR)
 
 isclean: ## this target fails if there are uncommitted files
