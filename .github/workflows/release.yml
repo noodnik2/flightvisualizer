@@ -1,4 +1,4 @@
-name: Go package
+name: Release Flight Visualizer
 
 on:
   push:
