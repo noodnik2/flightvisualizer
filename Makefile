@@ -23,8 +23,7 @@ build-linux: ## Builds the executable for Linux
 
 package:	isclean update test build-all ## build a distribution package from a committed state
 	mkdir -p dist/package/flightvisualizer
-	mv dist/macos dist/package/flightvisualizer
-	mv dist/windows dist/package/flightvisualizer
+	mv dist/macos dist/windows dist/linux dist/package/flightvisualizer
 	mv dist/linux dist/package/flightvisualizer
 	cp .env.local.template dist/package/flightvisualizer
 	cp .env.local.template dist/package/flightvisualizer/.env.local

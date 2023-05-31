@@ -41,3 +41,7 @@ Some of the identified sources below also support "live" streams, not just histo
 - [Aviation Stack](https://aviationstack.com/) - real-time, free 100 requests / month (`$$`)
 - [Flight Labs](https://www.goflightlabs.com/) - real-time, historical (`$$$`)
 - [AeroDataBox](https://aerodatabox.com/) - no flight tracking (`$`)
+- [Airlabs](https://airlabs.co/) - Reseller of flight data?
+  - Description of their "free" plan seems misleading
+  - Are they a reseller? (`$$`?)
+  - Seems like a wannabe startup

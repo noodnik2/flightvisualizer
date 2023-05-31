@@ -39,7 +39,7 @@ func init() {
 
 var tracksCmd = &cobra.Command{
 	Use:   "tracks",
-	Short: "Tracks",
+	Short: "Visualizes flight tracks",
 	Long:  `Generates KML visualizations of flight track logs retrieved from FlightAware's AeroAPI`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 

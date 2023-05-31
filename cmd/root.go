@@ -8,8 +8,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   os.Args[0],
-	Short: "Flight Visualizer",
-	Long:  `Generates KML visualizations of flight data retrieved from FlightAware's AeroAPI`,
+	Short: "Flight Visualizer CLI",
+	Long:  `Generates visualizations of flight data`,
 	CompletionOptions: cobra.CompletionOptions{
 		HiddenDefaultCmd: true,
 	},
