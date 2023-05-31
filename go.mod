@@ -2,7 +2,7 @@ module github.com/noodnik2/flightvisualizer
 
 go 1.18
 
-replace github.com/noodnik2/configurator v0.1.0 => ../configurator
+//replace github.com/noodnik2/configurator v0.1.0 => ../configurator
 
 require (
 	github.com/joho/godotenv v1.5.1
