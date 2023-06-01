@@ -5,7 +5,7 @@ go 1.18
 //replace github.com/noodnik2/configurator v0.1.0 => ../configurator
 
 require (
-	github.com/noodnik2/configurator v0.1.0
+	github.com/noodnik2/configurator v0.1.1
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
 	github.com/twpayne/go-kml/v3 v3.1.0

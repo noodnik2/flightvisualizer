@@ -43,7 +43,6 @@ var showConfigCmd = &cobra.Command{
 		items, getInfoErr := configurator.GetConfigEnvItems(config)
 		if getInfoErr != nil {
 			log.Fatalf("ERROR: %v\n", getInfoErr)
-			//notreached
 		}
 		log.Printf("from '%s':\n", configFilename)
 		for _, configItem := range items {
@@ -80,12 +79,10 @@ var editConfigCmd = &cobra.Command{
 		log.Printf("config(%#v)\n", config)
 		if editErr := configurator.EditConfig(&config); editErr != nil {
 			log.Fatalf("ERROR: %v\n", editErr)
-			//notreached
 		}
 
 		if saveErr := configurator.SaveConfig(configFilename, config); saveErr != nil {
 			log.Fatalf("ERROR: %v\n", saveErr)
-			//notreached
 		}
 
 		return nil

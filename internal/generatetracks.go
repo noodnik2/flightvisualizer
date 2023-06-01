@@ -126,7 +126,6 @@ func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
 	aeroKmls, createKmlErr := tc.Convert(tracker)
 	if createKmlErr != nil {
 		log.Fatalf("ERROR: couldn't create KMLs: %v", createKmlErr)
-		//notreached
 	}
 
 	sortedKmlLayersStr := strings.Join(sortedKmlLayers, "-")
@@ -151,7 +150,6 @@ func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
 
 		if writeErr := kmzSaver.Save(kmlFilename, aeroKml.KmlDoc); writeErr != nil {
 			log.Fatalf("ERROR: couldn't write output artifact(%s): %v", kmlFilename, writeErr)
-			//notreached
 		}
 
 		if firstKmlFilename == "" {
@@ -164,7 +162,6 @@ func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
 		log.Printf("INFO: Launching '%s'", firstKmlFilename)
 		if openErr := ios.LaunchFile(firstKmlFilename); openErr != nil {
 			log.Fatalf("ERROR: error returned from launching(%s): %v", firstKmlFilename, openErr)
-			//notreached
 		}
 	}
 
