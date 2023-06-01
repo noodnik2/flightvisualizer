@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/noodnik2/configurator"
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -26,7 +26,7 @@ var cmdFlagTracksLayersDefault = []string{internal.TracksLayerCamera, internal.T
 
 func init() {
 	rootCmd.AddCommand(tracksCmd)
-	tracksCmd.Flags().StringP(cmdFlagTracksArtifactsDir, "a", "artifacts", "Directory to save or load artifacts")
+	tracksCmd.Flags().StringP(cmdFlagTracksArtifactsDir, "a", "", "Directory to save or load artifacts")
 	tracksCmd.Flags().BoolP(cmdFlagTracksNoBanking, "b", false, "Disable banking heuristic calculations")
 	tracksCmd.Flags().IntP(cmdFlagTracksFlightCount, "c", 0, "Count of (most recent) flights to consider (0=unlimited)")
 	tracksCmd.Flags().StringP(cmdFlagTracksFromArtifacts, "f", "", "Use saved responses instead of querying AeroAPI")
@@ -43,12 +43,21 @@ var tracksCmd = &cobra.Command{
 	Long:  `Generates KML visualizations of flight track logs retrieved from FlightAware's AeroAPI`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
+		configFilename := internal.GetConfigFilename()
+		var config internal.Config
+		if loadConfigErr := configurator.LoadConfig(configFilename, &config); loadConfigErr != nil {
+			log.Fatalf("ERROR: %v\n", loadConfigErr)
+		}
+
 		cmdArgs, parseErr := parseArgs(cmd)
 		if parseErr != nil {
 			return fmt.Errorf("invalid syntax: %w", parseErr)
 		}
 
-		return internal.GenerateTracks(cmdArgs)
+		if genTracksErr := internal.GenerateTracks(cmdArgs, config); genTracksErr != nil {
+			log.Fatalf("ERROR: %v\n", genTracksErr)
+		}
+		return nil
 	},
 }
 
@@ -91,12 +100,6 @@ func parseArgs(cmd *cobra.Command) (cmdArgs internal.TracksCommandArgs, err erro
 	}
 
 	if cmdArgs.FlightCount, err = cmd.Flags().GetInt(cmdFlagTracksFlightCount); err != nil {
-		return
-	}
-
-	if _, artifactsDirExistsErr := os.Stat(cmdArgs.ArtifactsDir); os.IsNotExist(artifactsDirExistsErr) {
-		err = fmt.Errorf("artifacts directory(%s) not found; either create it or use the '%s' option to change: %w",
-			cmdArgs.ArtifactsDir, cmdFlagTracksArtifactsDir, artifactsDirExistsErr)
 		return
 	}
 

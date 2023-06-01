@@ -34,6 +34,7 @@ var showConfigCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Shows current configuration",
 	RunE: func(cmd *cobra.Command, args []string) error {
+
 		configFilename := internal.GetConfigFilename()
 		var config internal.Config
 		if loadConfigErr := configurator.LoadConfig(configFilename, &config); loadConfigErr != nil {

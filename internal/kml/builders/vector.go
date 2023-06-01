@@ -1,10 +1,12 @@
 package builders
 
 import (
+	"bytes"
+	"embed"
 	"fmt"
 	"image/color"
+	"io/fs"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -25,26 +27,23 @@ import (
 // calculated from the track data (e.g., "imputed" values).
 type VectorBuilder struct{}
 
-const vectorArrowRelPath = "internal/kml/images/blue_fast_arrow.png"
+const vectorArrowRelPath = "images/blue_fast_arrow.png"
 
 func (vb *VectorBuilder) Name() string {
 	return "Vector"
 }
 
+//go:embed images
+var embeddedImages embed.FS
+
 func (vb *VectorBuilder) Build(aeroTrackPositions []aeroapi.Position) *KmlProduct {
 
-	vectorArrowAbsPath, fpErr := filepath.Abs(vectorArrowRelPath)
-	if fpErr != nil {
-		log.Fatalf("ERROR: couldn't get absolute path of(%s): %v", vectorArrowRelPath, fpErr)
-		//notreached
-	}
-	vectorArrowPngBytes, rfErr := os.ReadFile(vectorArrowAbsPath)
-	if rfErr != nil {
-		log.Fatalf("ERROR: couldn't read file(%s): %v", vectorArrowAbsPath, rfErr)
-		//notreached
+	vectorArrowPngBytes, getErr := getEmbeddedFileContents(embeddedImages, vectorArrowRelPath)
+	if getErr != nil {
+		log.Fatalf("can't get embedded file: %v\n", getErr)
 	}
 
-	vectorArrowHref := filepath.Base(vectorArrowAbsPath)
+	vectorArrowHref := filepath.Base(vectorArrowRelPath)
 	thing := &KmlProduct{
 		Assets: map[string]any{
 			vectorArrowHref: vectorArrowPngBytes,
@@ -93,6 +92,21 @@ func (vb *VectorBuilder) Build(aeroTrackPositions []aeroapi.Position) *KmlProduc
 		Append(positionReferences...)
 
 	return thing
+}
+
+func getEmbeddedFileContents(fs fs.FS, fileName string) ([]byte, error) {
+	arrowFile, openErr := fs.Open(fileName)
+	if openErr != nil {
+		return nil, openErr
+	}
+	defer func() { _ = arrowFile.Close() }()
+
+	buffer := &bytes.Buffer{}
+	_, readErr := buffer.ReadFrom(arrowFile)
+	if readErr != nil {
+		return nil, readErr
+	}
+	return buffer.Bytes(), nil
 }
 
 type styledPlacemark struct {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -37,11 +38,23 @@ type TracksCommandArgs struct {
 	CutoffTime       time.Time
 }
 
-func GenerateTracks(cmdArgs TracksCommandArgs) error {
+func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
+
+	var artifactsDir string
+	if cmdArgs.ArtifactsDir != "" {
+		// override configured value with that from command line, if present
+		artifactsDir = cmdArgs.ArtifactsDir
+	} else {
+		artifactsDir = config.ArtifactsDir
+	}
+	if _, artifactsDirExistsErr := os.Stat(artifactsDir); os.IsNotExist(artifactsDirExistsErr) {
+		return fmt.Errorf("artifacts directory(%s) not found; create it or correct config or command line option: %w",
+			artifactsDir, artifactsDirExistsErr)
+	}
 
 	// fileBasedAeroApi is a file-based instance of our AeroApi library API,
 	// used to save or retrieve saved AeroAPI responses
-	fileBasedAeroApi := &aeroapi.FileAeroApi{ArtifactsDir: cmdArgs.ArtifactsDir}
+	fileBasedAeroApi := &aeroapi.FileAeroApi{ArtifactsDir: artifactsDir}
 
 	aeroApi := &aeroapi.RetrieverSaverApiImpl{}
 	var cutoffTime time.Time
@@ -54,10 +67,10 @@ func GenerateTracks(cmdArgs TracksCommandArgs) error {
 		fileBasedAeroApi.FlightIdsFileName = cmdArgs.FromArtifacts
 	} else {
 		// reading AeroAPI data from live AeroAPI REST API calls
-		var aeroApiErr error
-		if aeroApi.Retriever, aeroApiErr = getAeroApiHttpRetriever(cmdArgs.VerboseOperation); aeroApiErr != nil {
-			log.Fatalf("ERROR: unable to access AeroAPI: %v", aeroApiErr)
-			//notreached
+		aeroApi.Retriever = &aeroapi.HttpAeroApi{
+			Verbose: cmdArgs.VerboseOperation || config.Verbose,
+			ApiKey:  config.AeroApiKey,
+			ApiUrl:  config.AeroApiUrl,
 		}
 		if cmdArgs.SaveResponses {
 			aeroApi.Saver = fileBasedAeroApi
@@ -156,17 +169,6 @@ func GenerateTracks(cmdArgs TracksCommandArgs) error {
 	}
 
 	return nil
-}
-
-func getAeroApiHttpRetriever(isVerbose bool) (*aeroapi.HttpAeroApi, error) {
-	httpAeroApi, dotFileErr := aeroapi.HttpApiFromDotFiles(".env.local")
-	if dotFileErr != nil {
-		return nil, dotFileErr
-	}
-	if isVerbose {
-		httpAeroApi.Verbose = isVerbose
-	}
-	return httpAeroApi, nil
 }
 
 const fnPrefixTimestampFormat = "20060102150405Z"
