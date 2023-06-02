@@ -19,7 +19,7 @@ type TracksConverter struct {
 
 func (tc *TracksConverter) Convert(tracker kml.KmlTracker) ([]*kml.KmlTrack, error) {
 
-	flightIds, getIdsErr := tc.Api.GetFlightIds(tc.TailNumber, tc.CutoffTime, tc.FlightCount)
+	flightIds, getIdsErr := tc.Api.GetFlightIds(tc.TailNumber, tc.CutoffTime)
 	if getIdsErr != nil {
 		return nil, getIdsErr
 	}
@@ -39,6 +39,10 @@ func (tc *TracksConverter) Convert(tracker kml.KmlTracker) ([]*kml.KmlTrack, err
 			continue
 		}
 		kmlTracks = append(kmlTracks, kmlTrack)
+		if tc.FlightCount != 0 && len(kmlTracks) == tc.FlightCount {
+			// presumes the user's preferred flights are first in the list
+			break
+		}
 	}
 	if errorList != nil {
 		verboseMessagePrinter := func(mt string) {

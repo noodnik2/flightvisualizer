@@ -119,9 +119,6 @@ func parseArgs(cmd *cobra.Command) (cmdArgs internal.TracksCommandArgs, err erro
 		if !cmdArgs.CutoffTime.IsZero() { // cutoff time is inherent to saved artifact being used
 			incompatibleOptions(cmdFlagTracksCutoffTime, cmdFlagTracksFromArtifacts)
 		}
-		if cmdArgs.FlightCount != 0 { // flight count is unused when reading from saved artifact
-			incompatibleOptions(cmdFlagTracksFlightCount, cmdFlagTracksFromArtifacts)
-		}
 	}
 
 	return

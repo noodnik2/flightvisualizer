@@ -15,7 +15,7 @@ type HttpAeroApi struct {
 	ApiUrl  string
 }
 
-func (c *HttpAeroApi) GetFlightIdsUri(tailNumber string, cutoffTime time.Time) string {
+func (c *HttpAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) string {
 	endpoint := fmt.Sprintf("/flights/%s", tailNumber)
 	if !cutoffTime.IsZero() {
 		endpoint += fmt.Sprintf("?&end=%s", cutoffTime.Format(time.RFC3339))

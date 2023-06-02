@@ -23,6 +23,8 @@ const TracksLayerPath = "path"
 const TracksLayerPlacemark = "placemark"
 const TracksLayerVector = "vector"
 
+const kmlArtifactsFilenamePrefix = "fvk_"
+
 var TracksLayersSupported = []string{TracksLayerCamera, TracksLayerPath, TracksLayerPlacemark, TracksLayerVector}
 
 type TracksCommandArgs struct {
@@ -59,7 +61,6 @@ func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
 	aeroApi := &aeroapi.RetrieverSaverApiImpl{}
 	var cutoffTime time.Time
 	var tailNumber string
-	var flightCount int
 
 	if cmdArgs.FromArtifacts != "" {
 		// reading AeroAPI data from saved artifact files
@@ -78,7 +79,6 @@ func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
 		// these user-supplied values are only relevant when we call the external AeroAPI
 		cutoffTime = cmdArgs.CutoffTime
 		tailNumber = cmdArgs.TailNumber
-		flightCount = cmdArgs.FlightCount
 	}
 
 	// construct builder(s) for selected "layer(s)"
@@ -116,9 +116,9 @@ func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
 	// construct & invoke track converter using builder(s)
 	tc := iaeroapi.TracksConverter{
 		Verbose:     cmdArgs.VerboseOperation,
+		FlightCount: cmdArgs.FlightCount,
 		TailNumber:  tailNumber,
 		CutoffTime:  cutoffTime,
-		FlightCount: flightCount,
 		Api:         aeroApi,
 	}
 
@@ -145,7 +145,7 @@ func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
 		flightTimeRange := getTsFromTo(*aeroKml.StartTime, *aeroKml.EndTime)
 		kmlFilename := filepath.Join(
 			fileBasedAeroApi.ArtifactsDir,
-			fmt.Sprintf("fvk_%s_%s_%s.kmz", cmdArgs.TailNumber, flightTimeRange, sortedKmlLayersStr),
+			fmt.Sprintf("%s%s_%s_%s.kmz", kmlArtifactsFilenamePrefix, cmdArgs.TailNumber, flightTimeRange, sortedKmlLayersStr),
 		)
 
 		if writeErr := kmzSaver.Save(kmlFilename, aeroKml.KmlDoc); writeErr != nil {
