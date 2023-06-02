@@ -43,18 +43,12 @@ var tracksCmd = &cobra.Command{
 	Long:  `Generates KML visualizations of flight track logs retrieved from FlightAware's AeroAPI`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		configFilename := internal.GetConfigFilename()
-		var config internal.Config
-		if loadConfigErr := configurator.LoadConfig(configFilename, &config); loadConfigErr != nil {
-			log.Fatalf("ERROR: %v\n", loadConfigErr)
-		}
-
 		cmdArgs, parseErr := parseArgs(cmd)
 		if parseErr != nil {
-			return fmt.Errorf("invalid syntax: %w", parseErr)
+			log.Fatalf("ERROR: %v\n", parseErr)
 		}
 
-		if genTracksErr := internal.GenerateTracks(cmdArgs, config); genTracksErr != nil {
+		if genTracksErr := cmdArgs.GenerateTracks(); genTracksErr != nil {
 			log.Fatalf("ERROR: %v\n", genTracksErr)
 		}
 		return nil
@@ -62,6 +56,11 @@ var tracksCmd = &cobra.Command{
 }
 
 func parseArgs(cmd *cobra.Command) (cmdArgs internal.TracksCommandArgs, err error) {
+
+	if err = configurator.LoadConfig(internal.GetConfigFilename(), &cmdArgs.Config); err != nil {
+		return
+	}
+
 	if cmdArgs.VerboseOperation, err = cmd.Flags().GetBool(cmdFlagRootVerbose); err != nil {
 		return
 	}

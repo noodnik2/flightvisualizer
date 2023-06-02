@@ -2,7 +2,6 @@ package aeroapi
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 	"time"
@@ -22,12 +21,22 @@ const trackArtifactFilenameSuffix = ".json"
 const flightIdsArtifactFilenamePrefix = "fvf_"
 const flightIdsArtifactFilenameSuffix = ".json"
 
-func makeTrackArtifactFilename(flightId string) string {
+func MakeTrackArtifactFilename(flightId string) string {
 	return trackArtifactFilenamePrefix + flightId + trackArtifactFilenameSuffix
 }
 
-func makeFlightIdsArtifactFilename(queryId string) string {
+func IsTrackArtifactFilename(fn string) bool {
+	base := filepath.Base(fn)
+	return strings.HasPrefix(base, trackArtifactFilenamePrefix) && strings.HasSuffix(base, trackArtifactFilenameSuffix)
+}
+
+func MakeFlightIdsArtifactFilename(queryId string) string {
 	return flightIdsArtifactFilenamePrefix + queryId + flightIdsArtifactFilenameSuffix
+}
+
+func IsFlightIdsArtifactFilename(fn string) bool {
+	base := filepath.Base(fn)
+	return strings.HasPrefix(base, flightIdsArtifactFilenamePrefix) && strings.HasSuffix(base, flightIdsArtifactFilenameSuffix)
 }
 
 func (c *FileAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) string {
@@ -37,6 +46,8 @@ func (c *FileAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) s
 		// handle the case of invoking a saved track file directly; use extracted flight ID
 		baseFilename := filepath.Base(fileName)
 		if strings.HasPrefix(baseFilename, trackArtifactFilenamePrefix) && strings.HasSuffix(baseFilename, trackArtifactFilenameSuffix) {
+			// TODO the requirement for using a reference type containing a list of flight ids has been deprecated
+			//  the support for it here should be removed (see newer implementation of "sourceTypeSingleTrackArtifact")
 			// the "flight ID" is simply the part in between this prefix and suffix
 			return fmt.Sprintf("[%s]", baseFilename[4:len(baseFilename)-5])
 		}
@@ -47,7 +58,7 @@ func (c *FileAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) s
 		} else {
 			queryId = fmt.Sprintf("%s_cutoff-%s", tailNumber, cutoffTime.Format("20060102T150405Z0700"))
 		}
-		fileName = makeFlightIdsArtifactFilename(queryId)
+		fileName = MakeFlightIdsArtifactFilename(queryId)
 	}
 	if filepath.Dir(fileName) == "." {
 		// use the artifacts directory if not specified
@@ -56,21 +67,11 @@ func (c *FileAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) s
 	return fileName
 }
 
-func (c *FileAeroApi) GetTrackForFlightUri(flightId string) string {
+func (c *FileAeroApi) GetTrackForFlightRef(flightId string) string {
 	artifactDir := filepath.Dir(c.FlightIdsFileName)
 	if artifactDir == "." {
 		// use the artifacts directory if not specified
 		artifactDir = c.ArtifactsDir
 	}
-	return filepath.Join(artifactDir, makeTrackArtifactFilename(flightId))
-}
-
-func (c *FileAeroApi) Load(fileName string) ([]byte, error) {
-	log.Printf("INFO: reading from file(%s)\n", fileName)
-	return c.FileLoader.Load(fileName)
-}
-
-func (c *FileAeroApi) Save(fileName string, contents []byte) error {
-	log.Printf("INFO: saving to file(%s)\n", fileName)
-	return c.FileSaver.Save(fileName, contents)
+	return filepath.Join(artifactDir, MakeTrackArtifactFilename(flightId))
 }

@@ -14,21 +14,20 @@ type TracksConverter struct {
 	TailNumber  string
 	CutoffTime  time.Time
 	FlightCount int
-	aeroapi.Api
 }
 
-func (tc *TracksConverter) Convert(tracker kml.KmlTracker) ([]*kml.KmlTrack, error) {
+func (tc *TracksConverter) Convert(aeroApi aeroapi.Api, tracker kml.TrackGenerator) ([]*kml.Track, error) {
 
-	flightIds, getIdsErr := tc.Api.GetFlightIds(tc.TailNumber, tc.CutoffTime)
+	flightIds, getIdsErr := aeroApi.GetFlightIds(tc.TailNumber, tc.CutoffTime)
 	if getIdsErr != nil {
 		return nil, getIdsErr
 	}
 
-	var kmlTracks []*kml.KmlTrack
+	var kmlTracks []*kml.Track
 	nFlights := len(flightIds)
 	var errorList []error
 	for i := 0; i < nFlights; i++ {
-		track, getTrackErr := tc.Api.GetTrackForFlightId(flightIds[i])
+		track, getTrackErr := aeroApi.GetTrackForFlightId(flightIds[i])
 		if getTrackErr != nil {
 			errorList = append(errorList, getTrackErr)
 			continue

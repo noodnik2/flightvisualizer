@@ -39,12 +39,14 @@ type Api interface {
 }
 
 type ArtifactLocator interface {
-	// GetFlightIdsRef returns a reference enabling retrieval of the flight identifier(s) for the desired track(s).
+	// GetFlightIdsRef returns a reference used to obtain the flight identifier(s) for the desired track(s).
 	// A return value enclosed by square brackets can be interpreted as a comma-separated-list of flight identifier(s);
-	// otherwise it should be interpreted as a URI to be invoked in order to obtain the desired list.
+	// otherwise it's an address (such as a URL or file name) used within the context to obtain the desired list.
+	// TODO the requirement for using a reference type containing a list of flight ids has been deprecated
+	//  the support for it here should be removed (see newer implementation of "sourceTypeSingleTrackArtifact")
 	GetFlightIdsRef(tailNumber string, cutoffTime time.Time) string
-	// GetTrackForFlightUri returns a URI to be invoked in order to obtain the desired track data.
-	GetTrackForFlightUri(flightId string) string
+	// GetTrackForFlightRef returns a reference (such as a URL or file name) used to obtain the desired track data.
+	GetTrackForFlightRef(flightId string) string
 }
 
 type ArtifactRetriever interface {
@@ -67,6 +69,8 @@ type RetrieverSaverApiImpl struct {
 func (a *RetrieverSaverApiImpl) GetFlightIds(tailNumber string, cutoffTime time.Time) ([]string, error) {
 	endpoint := a.Retriever.GetFlightIdsRef(tailNumber, cutoffTime)
 	if strings.HasPrefix(endpoint, "[") && strings.HasSuffix(endpoint, "]") {
+		// TODO the requirement for using a reference type containing a list of flight ids has been deprecated
+		//  the support for it here should be removed (see newer implementation of "sourceTypeSingleTrackArtifact")
 		// see contract of 'GetFlightIdsRef' about "A return value enclosed by square brackets"...
 		return strings.Split(endpoint[1:len(endpoint)-1], ","), nil
 	}
@@ -96,14 +100,14 @@ func (a *RetrieverSaverApiImpl) GetFlightIds(tailNumber string, cutoffTime time.
 
 // GetTrackForFlightId retrieves the track for the given flight given its AeroAPI identifier
 func (a *RetrieverSaverApiImpl) GetTrackForFlightId(flightId string) (*Track, error) {
-	endpoint := a.Retriever.GetTrackForFlightUri(flightId)
+	endpoint := a.Retriever.GetTrackForFlightRef(flightId)
 	responseBytes, getErr := a.Retriever.Load(endpoint)
 	if getErr != nil {
 		return nil, newFlightApiError("get", endpoint, getErr)
 	}
 
 	if a.Saver != nil {
-		saveUri := a.Saver.GetTrackForFlightUri(flightId)
+		saveUri := a.Saver.GetTrackForFlightRef(flightId)
 		if getSaveErr := a.Saver.Save(saveUri, responseBytes); getSaveErr != nil {
 			return nil, newFlightApiError("save get track response", endpoint, getSaveErr)
 		}

@@ -23,9 +23,8 @@ func (c *HttpAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) s
 	return endpoint
 }
 
-func (c *HttpAeroApi) GetTrackForFlightUri(flightId string) string {
-	endpoint := fmt.Sprintf("/flights/%s/track", flightId)
-	return endpoint
+func (c *HttpAeroApi) GetTrackForFlightRef(flightId string) string {
+	return fmt.Sprintf("/flights/%s/track", flightId)
 }
 
 func (c *HttpAeroApi) Load(endpoint string) ([]byte, error) {

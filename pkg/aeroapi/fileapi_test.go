@@ -75,16 +75,16 @@ func TestFileAeroApi_GetUris(t *testing.T) {
 			name:                 "without artifacts dir",
 			flightId:             "aFid",
 			tailNumber:           "aT#",
-			expectedFlightIdsUri: makeFlightIdsArtifactFilename("aT#"),
-			expectedTrackUri:     makeTrackArtifactFilename("aFid"),
+			expectedFlightIdsUri: MakeFlightIdsArtifactFilename("aT#"),
+			expectedTrackUri:     MakeTrackArtifactFilename("aFid"),
 		},
 		{
 			name:                 "without cutoff time",
 			artifactsDir:         "bDir",
 			flightId:             "bFid",
 			tailNumber:           "bT#",
-			expectedFlightIdsUri: filepath.Join("bDir", makeFlightIdsArtifactFilename("bT#")),
-			expectedTrackUri:     filepath.Join("bDir", makeTrackArtifactFilename("bFid")),
+			expectedFlightIdsUri: filepath.Join("bDir", MakeFlightIdsArtifactFilename("bT#")),
+			expectedTrackUri:     filepath.Join("bDir", MakeTrackArtifactFilename("bFid")),
 		},
 		{
 			name:                 "with UTC cutoff time",
@@ -92,8 +92,8 @@ func TestFileAeroApi_GetUris(t *testing.T) {
 			flightId:             "cFid",
 			tailNumber:           "cT#",
 			cutoffTime:           time.Date(2023, 5, 24, 14, 2, 3, 4, time.UTC),
-			expectedFlightIdsUri: filepath.Join("cDir", makeFlightIdsArtifactFilename("cT#_cutoff-20230524T140203Z")),
-			expectedTrackUri:     filepath.Join("cDir", makeTrackArtifactFilename("cFid")),
+			expectedFlightIdsUri: filepath.Join("cDir", MakeFlightIdsArtifactFilename("cT#_cutoff-20230524T140203Z")),
+			expectedTrackUri:     filepath.Join("cDir", MakeTrackArtifactFilename("cFid")),
 		},
 		{
 			name:                 "with non-UTC cutoff time",
@@ -101,24 +101,24 @@ func TestFileAeroApi_GetUris(t *testing.T) {
 			flightId:             "dFid",
 			tailNumber:           "dT#",
 			cutoffTime:           time.Date(2023, 5, 24, 14, 2, 3, 4, time.FixedZone("PDT", -7*60*60)),
-			expectedFlightIdsUri: filepath.Join("dDir", makeFlightIdsArtifactFilename("dT#_cutoff-20230524T140203-0700")),
-			expectedTrackUri:     filepath.Join("dDir", makeTrackArtifactFilename("dFid")),
+			expectedFlightIdsUri: filepath.Join("dDir", MakeFlightIdsArtifactFilename("dT#_cutoff-20230524T140203-0700")),
+			expectedTrackUri:     filepath.Join("dDir", MakeTrackArtifactFilename("dFid")),
 		},
 		{
 			name:                 "with FlightIdsFileName",
 			artifactsDir:         "eDir",
-			flightIdsFileName:    makeFlightIdsArtifactFilename("f99"),
+			flightIdsFileName:    MakeFlightIdsArtifactFilename("f99"),
 			flightId:             "eFid",
-			expectedFlightIdsUri: filepath.Join("eDir", makeFlightIdsArtifactFilename("f99")),
-			expectedTrackUri:     filepath.Join("eDir", makeTrackArtifactFilename("eFid")),
+			expectedFlightIdsUri: filepath.Join("eDir", MakeFlightIdsArtifactFilename("f99")),
+			expectedTrackUri:     filepath.Join("eDir", MakeTrackArtifactFilename("eFid")),
 		},
 		{
 			name:                 "with track filename",
 			artifactsDir:         "fDir",
-			flightIdsFileName:    makeTrackArtifactFilename("f99"),
+			flightIdsFileName:    MakeTrackArtifactFilename("f99"),
 			flightId:             "fFid",
 			expectedFlightIdsUri: "[f99]",
-			expectedTrackUri:     filepath.Join("fDir", makeTrackArtifactFilename("fFid")),
+			expectedTrackUri:     filepath.Join("fDir", MakeTrackArtifactFilename("fFid")),
 		},
 	}
 
@@ -128,7 +128,7 @@ func TestFileAeroApi_GetUris(t *testing.T) {
 
 			fileAeroApi := &FileAeroApi{ArtifactsDir: tc.artifactsDir, FlightIdsFileName: tc.flightIdsFileName}
 			requirer.Equal(tc.expectedFlightIdsUri, fileAeroApi.GetFlightIdsRef(tc.tailNumber, tc.cutoffTime))
-			requirer.Equal(tc.expectedTrackUri, fileAeroApi.GetTrackForFlightUri(tc.flightId))
+			requirer.Equal(tc.expectedTrackUri, fileAeroApi.GetTrackForFlightRef(tc.flightId))
 		})
 	}
 }

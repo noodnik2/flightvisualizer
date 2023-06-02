@@ -15,7 +15,7 @@ func (*MockArtifactRetriever) GetFlightIdsRef(tailNumber string, _ time.Time) st
 	return "/fl/" + tailNumber
 }
 
-func (*MockArtifactRetriever) GetTrackForFlightUri(flightId string) string {
+func (*MockArtifactRetriever) GetTrackForFlightRef(flightId string) string {
 	return fmt.Sprintf("/fli/%s/track", flightId)
 }
 

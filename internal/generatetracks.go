@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image/color"
 	"log"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -16,18 +15,30 @@ import (
 	ios "github.com/noodnik2/flightvisualizer/internal/os"
 	"github.com/noodnik2/flightvisualizer/internal/persistence"
 	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
+	persistence2 "github.com/noodnik2/flightvisualizer/pkg/persistence"
 )
 
-const TracksLayerCamera = "camera"
-const TracksLayerPath = "path"
-const TracksLayerPlacemark = "placemark"
-const TracksLayerVector = "vector"
+const (
+	TracksLayerCamera          = "camera"
+	TracksLayerPath            = "path"
+	TracksLayerPlacemark       = "placemark"
+	TracksLayerVector          = "vector"
+	kmlArtifactsFilenamePrefix = "fvk_"
+)
 
-const kmlArtifactsFilenamePrefix = "fvk_"
+type sourceType int
+
+const (
+	sourceTypeUnrecognized        sourceType = iota
+	sourceTypeMultiTrackRemote               // pull a remote "flight ids" document (e.g., from AeroAPI server)
+	sourceTypeSingleTrackArtifact            // use a recorded "track" artifact as the source document
+	sourceTypeMultiTrackArtifact             // use a recorded "flight ids" artifact as the source document
+)
 
 var TracksLayersSupported = []string{TracksLayerCamera, TracksLayerPath, TracksLayerPlacemark, TracksLayerVector}
 
 type TracksCommandArgs struct {
+	Config           Config
 	LaunchFirstKml   bool
 	NoBanking        bool
 	SaveResponses    bool
@@ -40,62 +51,80 @@ type TracksCommandArgs struct {
 	CutoffTime       time.Time
 }
 
-func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
+func (tca TracksCommandArgs) GenerateTracks() error {
 
-	var artifactsDir string
-	if cmdArgs.ArtifactsDir != "" {
-		// override configured value with that from command line, if present
-		artifactsDir = cmdArgs.ArtifactsDir
-	} else {
-		artifactsDir = config.ArtifactsDir
-	}
-	if _, artifactsDirExistsErr := os.Stat(artifactsDir); os.IsNotExist(artifactsDirExistsErr) {
-		return fmt.Errorf("artifacts directory(%s) not found; create it or correct config or command line option: %w",
-			artifactsDir, artifactsDirExistsErr)
+	// order layer builder(s) for deterministic output
+	sortedKmlLayers := strings.Split(tca.KmlLayers, ",")
+	sort.Strings(sortedKmlLayers)
+	kmlGenerator, getKmlGeneratorErr := tca.newKmlTrackGenerator(sortedKmlLayers)
+	if getKmlGeneratorErr != nil {
+		return getKmlGeneratorErr
 	}
 
-	// fileBasedAeroApi is a file-based instance of our AeroApi library API,
-	// used to save or retrieve saved AeroAPI responses
-	fileBasedAeroApi := &aeroapi.FileAeroApi{ArtifactsDir: artifactsDir}
+	trackFactory := tca.newTrackFactory()
+	if trackFactory == nil {
+		return fmt.Errorf("no KML track factory could be created")
+	}
+	kmlTracks, generateKmlTracksErr := trackFactory(kmlGenerator)
+	if generateKmlTracksErr != nil {
+		return generateKmlTracksErr
+	}
 
-	aeroApi := &aeroapi.RetrieverSaverApiImpl{}
-	var cutoffTime time.Time
-	var tailNumber string
+	firstKmlFilename, saveKmlErr := tca.saveKmlTracks(kmlTracks, strings.Join(sortedKmlLayers, "-"))
+	if saveKmlErr != nil {
+		return saveKmlErr
+	}
 
-	if cmdArgs.FromArtifacts != "" {
-		// reading AeroAPI data from saved artifact files
-		aeroApi.Retriever = fileBasedAeroApi
-		fileBasedAeroApi.FlightIdsFileName = cmdArgs.FromArtifacts
-	} else {
-		// reading AeroAPI data from live AeroAPI REST API calls
-		aeroApi.Retriever = &aeroapi.HttpAeroApi{
-			Verbose: cmdArgs.VerboseOperation || config.Verbose,
-			ApiKey:  config.AeroApiKey,
-			ApiUrl:  config.AeroApiUrl,
+	// if indicated, "launch" the (first of the) generated KML visualization(s)
+	if tca.LaunchFirstKml && firstKmlFilename != "" {
+		log.Printf("INFO: Launching '%s'", firstKmlFilename)
+		if openErr := ios.LaunchFile(firstKmlFilename); openErr != nil {
+			return fmt.Errorf("error returned from launching(%s): %v", firstKmlFilename, openErr)
 		}
-		if cmdArgs.SaveResponses {
-			aeroApi.Saver = fileBasedAeroApi
-		}
-		// these user-supplied values are only relevant when we call the external AeroAPI
-		cutoffTime = cmdArgs.CutoffTime
-		tailNumber = cmdArgs.TailNumber
 	}
 
-	// construct builder(s) for selected "layer(s)"
-	sortedKmlLayers := strings.Split(cmdArgs.KmlLayers, ",")
-	sort.Slice(sortedKmlLayers, func(i, j int) bool {
-		// order builders for deterministic ordering of KML layers
-		return sortedKmlLayers[i] < sortedKmlLayers[j]
-	})
+	return nil
+}
 
-	var kmlBuilders []builders.GxKmlBuilder
+func (tca TracksCommandArgs) saveKmlTracks(kmlTracks []*kml.Track, kmlLayersUi string) (string, error) {
+	nKmlDocs := len(kmlTracks)
+	if tca.isVerbose() || nKmlDocs > 1 {
+		log.Printf("INFO: writing %d %s KML document(s)", nKmlDocs, kmlLayersUi)
+	}
+
+	// save the KML document(s) produced along with their asset(s) as `.kmz` file(s)
+	var firstKmlFilename string
+	for _, aeroKml := range kmlTracks {
+		kmzSaver := &persistence.KmzSaver{
+			Saver:  &persistence2.FileSaver{},
+			Assets: aeroKml.KmlAssets,
+		}
+		flightTimeRange := getTsFromTo(*aeroKml.StartTime, *aeroKml.EndTime)
+		kmlFilename := filepath.Join(
+			tca.getArtifactsDir(),
+			fmt.Sprintf("%s%s_%s_%s.kmz", kmlArtifactsFilenamePrefix, tca.TailNumber, flightTimeRange, kmlLayersUi),
+		)
+
+		if writeErr := kmzSaver.Save(kmlFilename, aeroKml.KmlDoc); writeErr != nil {
+			return "", fmt.Errorf("couldn't write output artifact(%s): %v", kmlFilename, writeErr)
+		}
+
+		if firstKmlFilename == "" {
+			firstKmlFilename = kmlFilename
+		}
+	}
+	return firstKmlFilename, nil
+}
+
+func (tca TracksCommandArgs) newKmlTrackGenerator(sortedKmlLayers []string) (*kml.TrackBuilderEnsemble, error) {
+	var kmlBuilders []builders.KmlTrackBuilder
 	for _, kmlLayer := range sortedKmlLayers {
-		var kmlBuilder builders.GxKmlBuilder
+		var kmlBuilder builders.KmlTrackBuilder
 		switch kmlLayer {
 		case TracksLayerCamera:
 			kmlBuilder = &builders.CameraBuilder{
-				AddBankAngle: !cmdArgs.NoBanking,
-				VerboseFlag:  cmdArgs.VerboseOperation,
+				AddBankAngle: !tca.NoBanking,
+				VerboseFlag:  tca.isVerbose(),
 			}
 		case TracksLayerPath:
 			kmlBuilder = &builders.PathBuilder{
@@ -107,65 +136,121 @@ func GenerateTracks(cmdArgs TracksCommandArgs, config Config) error {
 		case TracksLayerVector:
 			kmlBuilder = &builders.VectorBuilder{}
 		default:
-			return fmt.Errorf("unrecognized kmlLayer(%s); supported: %v", kmlLayer,
+			return nil, fmt.Errorf("unrecognized kmlLayer(%s); supported: %v", kmlLayer,
 				strings.Join(TracksLayersSupported, ","))
 		}
 		kmlBuilders = append(kmlBuilders, kmlBuilder)
 	}
 
-	// construct & invoke track converter using builder(s)
-	tc := iaeroapi.TracksConverter{
-		Verbose:     cmdArgs.VerboseOperation,
-		FlightCount: cmdArgs.FlightCount,
-		TailNumber:  tailNumber,
-		CutoffTime:  cutoffTime,
-		Api:         aeroApi,
-	}
+	return &kml.TrackBuilderEnsemble{Builders: kmlBuilders}, nil
+}
 
-	tracker := &kml.GxTracker{Builders: kmlBuilders}
-	aeroKmls, createKmlErr := tc.Convert(tracker)
-	if createKmlErr != nil {
-		log.Fatalf("ERROR: couldn't create KMLs: %v", createKmlErr)
-	}
+type kmlTrackFactory func(kml.TrackGenerator) ([]*kml.Track, error)
 
-	sortedKmlLayersStr := strings.Join(sortedKmlLayers, "-")
+func (tca TracksCommandArgs) newTrackFactory() kmlTrackFactory {
+	var trackFactory kmlTrackFactory
 
-	nKmlDocs := len(aeroKmls)
-	if cmdArgs.VerboseOperation || nKmlDocs > 1 {
-		log.Printf("INFO: writing %d %s KML document(s)", nKmlDocs, sortedKmlLayersStr)
-	}
+	verbose := tca.isVerbose()
+	artifactsDir := tca.getArtifactsDir()
 
-	// save the KML document(s) produced along with their asset(s) as `.kmz` file(s)
-	var firstKmlFilename string
-	for _, aeroKml := range aeroKmls {
-		kmzSaver := &persistence.KmzSaver{
-			Saver:  fileBasedAeroApi,
-			Assets: aeroKml.KmlAssets,
-		}
-		flightTimeRange := getTsFromTo(*aeroKml.StartTime, *aeroKml.EndTime)
-		kmlFilename := filepath.Join(
-			fileBasedAeroApi.ArtifactsDir,
-			fmt.Sprintf("%s%s_%s_%s.kmz", kmlArtifactsFilenamePrefix, cmdArgs.TailNumber, flightTimeRange, sortedKmlLayersStr),
-		)
-
-		if writeErr := kmzSaver.Save(kmlFilename, aeroKml.KmlDoc); writeErr != nil {
-			log.Fatalf("ERROR: couldn't write output artifact(%s): %v", kmlFilename, writeErr)
+	switch tca.getSourceType() {
+	case sourceTypeSingleTrackArtifact:
+		trackFactory = func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
+			track, getTfaErr := tca.getTrackFromArtifact()
+			if getTfaErr != nil {
+				return nil, getTfaErr
+			}
+			kmlTrack, err := tracker.Generate(track)
+			if err != nil {
+				return nil, err
+			}
+			return []*kml.Track{kmlTrack}, nil
 		}
 
-		if firstKmlFilename == "" {
-			firstKmlFilename = kmlFilename
+	case sourceTypeMultiTrackArtifact:
+		trackFactory = func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
+			if tca.SaveResponses {
+				// there's no good reason to save data already coming from local files
+				log.Printf("NOTE: inappropriate 'save responses' option ignored")
+			}
+			aeroApi := &aeroapi.RetrieverSaverApiImpl{
+				// reading AeroAPI data from saved artifact files
+				Retriever: &aeroapi.FileAeroApi{
+					ArtifactsDir:      artifactsDir,
+					FlightIdsFileName: tca.FromArtifacts,
+				},
+			}
+			tc := iaeroapi.TracksConverter{
+				Verbose:     verbose,
+				FlightCount: tca.FlightCount,
+				TailNumber:  tca.TailNumber,
+				CutoffTime:  tca.CutoffTime,
+			}
+			return tc.Convert(aeroApi, tracker)
+		}
+
+	case sourceTypeMultiTrackRemote:
+		trackFactory = func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
+			var artifactSaver aeroapi.ArtifactSaver
+			if tca.SaveResponses {
+				artifactSaver = &aeroapi.FileAeroApi{ArtifactsDir: artifactsDir}
+			}
+			aeroApi := &aeroapi.RetrieverSaverApiImpl{
+				// reading AeroAPI data from live AeroAPI REST API calls
+				Retriever: &aeroapi.HttpAeroApi{
+					Verbose: verbose,
+					ApiKey:  tca.Config.AeroApiKey,
+					ApiUrl:  tca.Config.AeroApiUrl,
+				},
+				Saver: artifactSaver,
+			}
+			tc := iaeroapi.TracksConverter{
+				Verbose:     verbose,
+				FlightCount: tca.FlightCount,
+				TailNumber:  tca.TailNumber,
+				CutoffTime:  tca.CutoffTime,
+			}
+			return tc.Convert(aeroApi, tracker)
 		}
 	}
+	return trackFactory
+}
 
-	// if indicated, "launch" the (first of the) generated KML visualization(s)
-	if cmdArgs.LaunchFirstKml && firstKmlFilename != "" {
-		log.Printf("INFO: Launching '%s'", firstKmlFilename)
-		if openErr := ios.LaunchFile(firstKmlFilename); openErr != nil {
-			log.Fatalf("ERROR: error returned from launching(%s): %v", firstKmlFilename, openErr)
-		}
+func (tca TracksCommandArgs) getSourceType() sourceType {
+
+	if tca.FromArtifacts == "" {
+		return sourceTypeMultiTrackRemote
 	}
 
-	return nil
+	if aeroapi.IsTrackArtifactFilename(tca.FromArtifacts) {
+		return sourceTypeSingleTrackArtifact
+	}
+
+	if aeroapi.IsFlightIdsArtifactFilename(tca.FromArtifacts) {
+		return sourceTypeMultiTrackArtifact
+	}
+
+	log.Printf("ERROR: unrecognized artifact(%s)\n", tca.FromArtifacts)
+	return sourceTypeUnrecognized
+}
+
+func (tca TracksCommandArgs) getTrackFromArtifact() (*aeroapi.Track, error) {
+	contents, loadErr := (&persistence2.FileLoader{}).Load(tca.FromArtifacts)
+	if loadErr != nil {
+		return nil, loadErr
+	}
+	return aeroapi.TrackFromJson(contents)
+}
+
+func (tca TracksCommandArgs) getArtifactsDir() string {
+	if tca.ArtifactsDir != "" {
+		return tca.ArtifactsDir
+	}
+	return tca.Config.ArtifactsDir
+}
+
+func (tca TracksCommandArgs) isVerbose() bool {
+	return tca.VerboseOperation || tca.Config.Verbose
 }
 
 const fnPrefixTimestampFormat = "20060102150405Z"

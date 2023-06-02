@@ -77,7 +77,7 @@ func TestGetFlightIdsResponseProcessing(t *testing.T) {
 			assertions: func(requirer *require.Assertions, savedResponses *testResponseSaver) {
 				responses := savedResponses.responses
 				requirer.Equal(1, len(responses))
-				requirer.Equal(filepath.Join("adir", makeFlightIdsArtifactFilename("irrelevant")), responses[0].name)
+				requirer.Equal(filepath.Join("adir", MakeFlightIdsArtifactFilename("irrelevant")), responses[0].name)
 				sum := crc32.ChecksumIEEE(responses[0].contents)
 				requirer.Equal(uint32(0xff2cac5), sum)
 			},
@@ -151,7 +151,7 @@ func TestGetTrackForFlightId(t *testing.T) {
 				// verify the expected saved response
 				responses := saver.responses
 				requirer.Equal(1, len(responses))
-				requirer.Equal(makeTrackArtifactFilename("irrelevant"), responses[0].name)
+				requirer.Equal(MakeTrackArtifactFilename("irrelevant"), responses[0].name)
 				sum := crc32.ChecksumIEEE(responses[0].contents)
 				requirer.Equal(uint32(0xff2cac5), sum)
 			},
