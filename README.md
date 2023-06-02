@@ -61,7 +61,8 @@ See the [AeroAPI] documentation to learn more about this.
 
 Flight Visualizer stores and accesses your AeroAPI API Key in its configuration, which is normally stored
 in the file `.config/fviz` located underneath your `HOME` directory.  You can set the environment variable
-`FVIZ_CONFIG_FILE` to point to a different file, if needed.
+`FVIZ_CONFIG_FILE` to point to a different file, if needed.  Also, each configuration property can be 
+overridden by setting it as an environment variable prior to invocation of Flight Visualizer.
 
 You can use your own editor or the `config edit` sub-command to create and modify the properties in Flight
 Visualizer's configuration file.  Here's an example file (with secrets removed:)
@@ -129,7 +130,7 @@ Another example leverages more of the available options, including:
 - `--cutoffTime` - target a particular flight within the history (e.g., not just the latest available)
 - `--flightCount` - limit the number of most recent flight(s) for which to produce visualizations
 - `--saveArtifacts` - save responses obtained from [AeroAPI] in order to re-use them later (e.g., with different KML generation options, etc.)
-- `--artifactsDir` - specify where "artifacts" are read/written (defaults to `artifacts')
+- `--artifactsDir` - specify where "artifacts" are read/written (i.e., instead of configured `ARTIFACTS_DIR`)
 - `--layers ` - specify the visualization "layer(s)" to include in the [KML] document(s) (e.g., `camera,path,vector`)
 - `--verbose` - generate more detailed runtime logging to help understand what's happening
 

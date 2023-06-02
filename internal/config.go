@@ -15,9 +15,15 @@ type Config struct {
 	AeroApiKey string `env:"AEROAPI_API_KEY,required" secret:"mask"`
 }
 
-const configFile = ".config/fviz"
+const (
+	userConfigFilenameEnvVar = "FVIZ_CONFIG_FILE"
+	configFile               = ".config/fviz"
+)
 
 func GetConfigFilename() string {
+	if userConfigFilename := os.Getenv(userConfigFilenameEnvVar); userConfigFilename != "" {
+		return userConfigFilename
+	}
 	homeDir := os.Getenv("HOME")
 	configFilename := filepath.Join(homeDir, configFile)
 	return configFilename
