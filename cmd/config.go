@@ -76,7 +76,6 @@ var editConfigCmd = &cobra.Command{
 			log.Printf("NOTE: %v\n", loadConfigErr)
 		}
 
-		log.Printf("config(%#v)\n", config)
 		if editErr := configurator.EditConfig(&config); editErr != nil {
 			log.Fatalf("ERROR: %v\n", editErr)
 		}

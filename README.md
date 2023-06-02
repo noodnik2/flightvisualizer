@@ -51,20 +51,50 @@ ok      github.com/noodnik2/flightvisualizer/pkg/aeroapi        0.372s
 
 ## Setup / Configuration
 
+### Installation
+Installing flight visualizer is simply a matter of copying its executable binary (e.g., `fviz` or `fviz.exe` in Windows)
+into your `PATH` from where it can be accessed.  Everything needed is contained in the single binary.
+
+### Configuration
 In order to retrieve flight information using [AeroAPI], you'll need to obtain and install an API Key.
 See the [AeroAPI] documentation to learn more about this.
 
-Once you have your API Key:
-1. Copy the supplied [`./.env.local.template`](./.env.local.template) template file to `.env.local` in the folder from which you run `fviz`
-2. Set the value of the `AEROAPI_API_KEY` configuration parameter in `.env.local`
+Flight Visualizer stores and accesses your AeroAPI API Key in its configuration, which is normally stored
+in the file `.config/fviz` located underneath your `HOME` directory.  You can set the environment variable
+`FVIZ_CONFIG_FILE` to point to a different file, if needed.
 
-Once you've done this, you'll be good to go.  Just remember to protect this `.env.local` file going forward, as it contains a secret.
+You can use your own editor or the `config edit` sub-command to create and modify the properties in Flight
+Visualizer's configuration file.  Here's an example file (with secrets removed:)
+
+```shell
+$ cat ~/.config/fviz
+AEROAPI_API_URL=https://aeroapi.flightaware.com/aeroapi
+ARTIFACTS_DIR=.
+VERBOSE=false
+AEROAPI_API_KEY=YourAeroApiKeySecretGoesHere
+$ █
+```
+
+The console log below illustrates how using `fviz config edit` steps through each configuration item,
+showing its current value, and giving an opportunity to change it:
+```shell
+$ fviz config edit
+2023/06/02 15:54:26 editing '/Users/johnny/.config/fviz':
+AEROAPI_API_URL: https://aeroapi.flightaware.com/aeroapi
+ARTIFACTS_DIR: .
+VERBOSE: (Use the arrow keys to navigate: ↓↑) 
+▸ False
+  True
+AEROAPI_API_KEY: *******************************
+Done? [y/N] y
+$ █
+```
 
 ### The `artifacts` Folder
 
-By default, `fviz` assumes the artifacts it reads & writes should be located in a folder named `artifacts`, nested within the current
-directory.  Therefore, you should always have such a sub-folder underneath the current directory when running `fviz`.  Alternatively,
-you can use the `--artifactsDir` option to specify the location for artifacts each time you invoke `fviz`.
+By default, `fviz` assumes the artifacts it reads & writes should be located in the directory specified in
+its `ARTIFACTS_DIR` configuration property. You can override this per-invocation using the `--artifactsDir`
+option to specify the location for artifacts each time you invoke `fviz`.
 
 ## More Example Invocations
 
@@ -83,7 +113,7 @@ is an ultra-cool place to visit the next time you're in Maui 🤙👍), and the 
   <summary><code>$ fviz tracks --tailNumber N335SP --launch</code></summary>
 
 ```shell
-$ fviz tracks --tailNumber N335SP --launch
+$ fviz tracks --verbose --tailNumber N335SP --launch
 2023/05/23 17:33:48 INFO: requesting from endpoint(/flights/N335SP)
 2023/05/23 17:33:49 INFO: requesting from endpoint(/flights/N335SP-1684874159-adhoc-1864p/track)
 2023/05/23 17:33:49 INFO: requesting from endpoint(/flights/N335SP-1684868329-adhoc-760p/track)
