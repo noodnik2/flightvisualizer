@@ -218,7 +218,6 @@ produce visualizations _(including in real-time!)_ of simulated flights in [Goog
   in the [LICENSE](./LICENSE) file
 - Contributions to this project are encouraged, and guidelines are established
   in the [CONTRIBUTIONS](./CONTRIBUTING.md) file
-  
 
 [AeroAPI]: https://flightaware.com/commercial/aeroapi
 [KML]: https://developers.google.com/kml
