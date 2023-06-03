@@ -1,7 +1,6 @@
 package aeroapi
 
 import (
-	"log"
 	"math"
 	"time"
 )
@@ -43,10 +42,11 @@ func (u *Math) GetBankAngle(fromPosition, toPosition Position) Degrees {
 	newRawPlaneBankAngle := ((fromPosition.GsKnots / 10) + 7) * turnRate / 3
 	bankAngle := rationalizeBankAngle(Degrees(newRawPlaneBankAngle))
 
-	if u.Verbose {
-		log.Printf("heading(%f), bank angle(%f), deltaT(%v) deltaH(%f), turnRate(%v), groundspeed(%f)\n",
-			fromPosition.Heading, bankAngle, deltaT, deltaH, turnRate, fromPosition.GsKnots)
-	}
+	// TODO consider adding a "debug" flag in order to re-enable this sometimes-helpful output
+	//if u.Verbose {
+	//	log.Printf("heading(%f), bank angle(%f), deltaT(%v) deltaH(%f), turnRate(%v), groundspeed(%f)\n",
+	//		fromPosition.Heading, bankAngle, deltaT, deltaH, turnRate, fromPosition.GsKnots)
+	//}
 
 	return bankAngle
 }

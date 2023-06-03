@@ -3,14 +3,16 @@ package aeroapi
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
+
+	"github.com/noodnik2/flightvisualizer/pkg/persistence"
 )
 
-type GetRequester func(url string) ([]byte, error)
 type ResponseSaver func(string, []byte) (string, error)
 
 type FlightsResponse struct {
-	Flights []Flight
+	Flights []Flight `json:"flights"`
 }
 
 type Flight struct {
@@ -31,58 +33,82 @@ type Position struct {
 	Timestamp  time.Time `json:"timestamp"`
 }
 
-type Api struct {
-	Getter GetRequester
-	Saver  ResponseSaver
+type Api interface {
+	GetFlightIds(tailNumber string, cutoffTime time.Time) ([]string, error)
+	GetTrackForFlightId(flightId string) (*Track, error)
+}
+
+type ArtifactLocator interface {
+	// GetFlightIdsRef returns a reference used to obtain the flight identifier(s) for the desired track(s).
+	// A return value enclosed by square brackets can be interpreted as a comma-separated-list of flight identifier(s);
+	// otherwise it's an address (such as a URL or file name) used within the context to obtain the desired list.
+	// TODO the requirement for using a reference type containing a list of flight ids has been deprecated
+	//  the support for it here should be removed (see newer implementation of "sourceTypeSingleTrackArtifact")
+	GetFlightIdsRef(tailNumber string, cutoffTime time.Time) string
+	// GetTrackForFlightRef returns a reference (such as a URL or file name) used to obtain the desired track data.
+	GetTrackForFlightRef(flightId string) string
+}
+
+type ArtifactRetriever interface {
+	ArtifactLocator
+	persistence.Loader
+}
+
+type ArtifactSaver interface {
+	ArtifactLocator
+	persistence.Saver
+}
+
+type RetrieverSaverApiImpl struct {
+	Retriever ArtifactRetriever
+	Saver     ArtifactSaver
 }
 
 // GetFlightIds returns the AeroAPI identifier(s) of the flight(s) specified by the parameters
 // cutoffTime (optional) - most recent time for a flight to be considered
-// flightCount (optional) - max number of (most recent) flights to consider
-func (a *Api) GetFlightIds(tailNumber string, cutoffTime *time.Time, flightCount int) ([]string, error) {
-	endpoint := fmt.Sprintf("/flights/%s", tailNumber)
-	if cutoffTime != nil {
-		endpoint += fmt.Sprintf("?&end=%s", cutoffTime.Format(time.RFC3339))
+func (a *RetrieverSaverApiImpl) GetFlightIds(tailNumber string, cutoffTime time.Time) ([]string, error) {
+	endpoint := a.Retriever.GetFlightIdsRef(tailNumber, cutoffTime)
+	if strings.HasPrefix(endpoint, "[") && strings.HasSuffix(endpoint, "]") {
+		// TODO the requirement for using a reference type containing a list of flight ids has been deprecated
+		//  the support for it here should be removed (see newer implementation of "sourceTypeSingleTrackArtifact")
+		// see contract of 'GetFlightIdsRef' about "A return value enclosed by square brackets"...
+		return strings.Split(endpoint[1:len(endpoint)-1], ","), nil
 	}
-	responseBytes, getErr := a.Getter(endpoint)
+	responseBytes, getErr := a.Retriever.Load(endpoint)
 	if getErr != nil {
 		return nil, newFlightApiError("get", endpoint, getErr)
 	}
 
 	if a.Saver != nil {
-		if _, getSaveErr := a.Saver(endpoint, responseBytes); getSaveErr != nil {
+		saveUri := a.Saver.GetFlightIdsRef(tailNumber, cutoffTime)
+		if getSaveErr := a.Saver.Save(saveUri, responseBytes); getSaveErr != nil {
 			return nil, newFlightApiError("save get flight ids response", endpoint, getSaveErr)
 		}
 	}
 
-	var flights FlightsResponse
-	if unmarshallErr := json.Unmarshal(responseBytes, &flights); unmarshallErr != nil {
-		return nil, newFlightApiError("unmarshal", endpoint, unmarshallErr)
+	flights, flightsErr := FlightsFromJson(responseBytes)
+	if flightsErr != nil {
+		return nil, newFlightApiError("unmarshal", endpoint, flightsErr)
 	}
 
 	var flightIds []string
-	for i, f := range flights.Flights {
-		if flightCount != 0 && i >= flightCount {
-			// Assuming that first entries returned are most recent; as the AeroAPI doc says: "approximately 14 days
-			// of recent and scheduled flight information is returned, ordered by scheduled_out (or scheduled_off
-			// if scheduled_out is missing) descending"
-			break
-		}
-		flightIds = append(flightIds, f.FlightId)
+	for _, flight := range flights.Flights {
+		flightIds = append(flightIds, flight.FlightId)
 	}
 	return flightIds, nil
 }
 
 // GetTrackForFlightId retrieves the track for the given flight given its AeroAPI identifier
-func (a *Api) GetTrackForFlightId(flightId string) (*Track, error) {
-	endpoint := fmt.Sprintf("/flights/%s/track", flightId)
-	responseBytes, getErr := a.Getter(endpoint)
+func (a *RetrieverSaverApiImpl) GetTrackForFlightId(flightId string) (*Track, error) {
+	endpoint := a.Retriever.GetTrackForFlightRef(flightId)
+	responseBytes, getErr := a.Retriever.Load(endpoint)
 	if getErr != nil {
 		return nil, newFlightApiError("get", endpoint, getErr)
 	}
 
 	if a.Saver != nil {
-		if _, getSaveErr := a.Saver(endpoint, responseBytes); getSaveErr != nil {
+		saveUri := a.Saver.GetTrackForFlightRef(flightId)
+		if getSaveErr := a.Saver.Save(saveUri, responseBytes); getSaveErr != nil {
 			return nil, newFlightApiError("save get track response", endpoint, getSaveErr)
 		}
 	}
@@ -94,6 +120,14 @@ func (a *Api) GetTrackForFlightId(flightId string) (*Track, error) {
 
 	track.FlightId = flightId
 	return track, nil
+}
+
+func FlightsFromJson(flightsBytes []byte) (*FlightsResponse, error) {
+	var flights FlightsResponse
+	if unmarshallErr := json.Unmarshal(flightsBytes, &flights); unmarshallErr != nil {
+		return nil, unmarshallErr
+	}
+	return &flights, nil
 }
 
 func TrackFromJson(aeroApiTrackJson []byte) (*Track, error) {

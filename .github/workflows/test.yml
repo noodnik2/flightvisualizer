@@ -1,0 +1,24 @@
+name: Test Flight Visualizer
+
+on:
+  push:
+    branches:
+      - main
+      - mock-output-folder
+
+env:
+  GO_VERSION: '1.20'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install dependencies
+        run: go get .
+      - name: Test with Go
+        run: go test ./...

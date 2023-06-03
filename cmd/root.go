@@ -7,9 +7,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "kmlflight",
-	Short: "KML track log generator",
-	Long: `Generates a KML file representing a track log obtained from FlightAware's AeroAPI.`,
+	Use:   os.Args[0],
+	Short: "Flight Visualizer CLI",
+	Long:  `Generates visualizations of flight data`,
 	CompletionOptions: cobra.CompletionOptions{
 		HiddenDefaultCmd: true,
 	},
@@ -27,5 +27,3 @@ const cmdFlagRootVerbose = "verbose"
 func init() {
 	rootCmd.PersistentFlags().BoolP(cmdFlagRootVerbose, "v", false, "Enables 'verbose' operation")
 }
-
-

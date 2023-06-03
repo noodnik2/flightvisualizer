@@ -1,22 +1,28 @@
-package kml
+package builders
 
 import (
 	"time"
 
 	gokml "github.com/twpayne/go-kml/v3"
 
-	"github.com/noodnik2/kmlflight/pkg/aeroapi"
+	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 
-type CameraTrackBuilder struct {
+type CameraBuilder struct {
 	AddBankAngle bool
 	VerboseFlag  bool
 }
 
-func (ctb *CameraTrackBuilder) Build(positions []aeroapi.Position) *KmlProduct {
+func (ctb *CameraBuilder) Name() string {
+	return "Camera"
+}
+
+func (ctb *CameraBuilder) Build(positions []aeroapi.Position) *KmlProduct {
 	var frames []gokml.Element
 	nPositions := len(positions)
-	aeroapiMathUtil := &aeroapi.Math{}
+	aeroapiMathUtil := &aeroapi.Math{
+		Verbose: ctb.VerboseFlag,
+	}
 	flyToMode := gokml.GxFlyToModeBounce // initial "bounce" into tour
 	var startTime time.Time
 

@@ -1,29 +1,29 @@
 package persistence
 
 import (
-	"os"
+	"bytes"
 
 	gokml "github.com/twpayne/go-kml/v3"
+
+	"github.com/noodnik2/flightvisualizer/pkg/persistence"
 )
 
 type KmzSaver struct {
-	FileSaver
+	persistence.Saver
 	Assets map[string]any
 }
 
-func (rs *KmzSaver) SaveNewKmz(fnFragment string, contents []byte) (saveFilename string, err error) {
-	var file *os.File
-	file, err = rs.createFile(rs.fnFromFragment(fnFragment))
-	if err != nil {
-		return
-	}
+func (rs *KmzSaver) Save(fnFragment string, contents []byte) error {
 	files := make(map[string]any)
 	for assetKey, assetValue := range rs.Assets {
 		files[assetKey] = assetValue
 	}
 	files["doc.kml"] = contents
 
-	err = gokml.WriteKMZ(file, files)
-	err = rs.closeFile(file, err)
-	return
+	memoryWriter := &bytes.Buffer{}
+	if writeErr := gokml.WriteKMZ(memoryWriter, files); writeErr != nil {
+		return writeErr
+	}
+
+	return rs.Saver.Save(fnFragment, memoryWriter.Bytes())
 }

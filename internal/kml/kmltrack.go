@@ -3,45 +3,35 @@ package kml
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
 	gokml "github.com/twpayne/go-kml/v3"
 
-	"github.com/noodnik2/kmlflight/pkg/aeroapi"
+	"github.com/noodnik2/flightvisualizer/internal/kml/builders"
+	"github.com/noodnik2/flightvisualizer/pkg/aeroapi"
 )
 
-// KmlTrack contains the fully-rendered KML document representing a flight,
+// Track contains the fully-rendered KML document representing a flight,
 // assets referenced by that KML document, and some relevant metadata
-type KmlTrack struct {
+type Track struct {
 	KmlDoc    []byte
 	KmlAssets map[string]any
 	StartTime *time.Time
 	EndTime   *time.Time
 }
 
-// KmlTracker can generate a KmlTrack from raw flight position data
-type KmlTracker interface {
-	Generate(*aeroapi.Track) (*KmlTrack, error)
+// TrackGenerator can generate a Track from raw flight position data
+type TrackGenerator interface {
+	Generate(*aeroapi.Track) (*Track, error)
 }
 
-// KmlProduct contains the top-level KML model element and the assets it references
-type KmlProduct struct {
-	Root   gokml.Element
-	Assets map[string]any
+// TrackBuilderEnsemble is a named set of KmlTrackBuilder instances
+type TrackBuilderEnsemble struct {
+	Builders []builders.KmlTrackBuilder
 }
 
-// GxKmlBuilder can build a KmlProduct from a list of raw AeroAPI positions
-type GxKmlBuilder interface {
-	Build(positions []aeroapi.Position) *KmlProduct
-}
-
-// GxTracker is a named set of GxKmlBuilder instances
-type GxTracker struct {
-	Name     string
-	Builders []GxKmlBuilder
-}
-
-func (gxt *GxTracker) Generate(aeroTrack *aeroapi.Track) (*KmlTrack, error) {
+func (gxt *TrackBuilderEnsemble) Generate(aeroTrack *aeroapi.Track) (*Track, error) {
 
 	positions := aeroTrack.Positions
 	nPositions := len(positions)
@@ -51,9 +41,13 @@ func (gxt *GxTracker) Generate(aeroTrack *aeroapi.Track) (*KmlTrack, error) {
 		toTime = &positions[nPositions-1].Timestamp
 	}
 
+	var layerNames []string
+	for _, kmlBuilder := range gxt.Builders {
+		layerNames = append(layerNames, kmlBuilder.Name())
+	}
 	mainDocument := gokml.Document(
-		gokml.Name(gxt.Name),
-		gokml.Description(fmt.Sprintf("%s depiction of AeroAPI Flight %s", gxt.Name, aeroTrack.FlightId)),
+		gokml.Name(fmt.Sprintf("AeroAPI Flight %s", aeroTrack.FlightId)),
+		gokml.Description(fmt.Sprintf("Layers: %s", strings.Join(layerNames, ", "))),
 	)
 
 	kmlAssets := make(map[string]any)
@@ -70,20 +64,11 @@ func (gxt *GxTracker) Generate(aeroTrack *aeroapi.Track) (*KmlTrack, error) {
 	if err := gxKMLElement.Write(&kmlBuilder); err != nil {
 		return nil, err
 	}
-	kmlTrack := KmlTrack{
+	kmlTrack := Track{
 		KmlDoc:    kmlBuilder.Bytes(),
 		KmlAssets: kmlAssets,
 		StartTime: fromTime,
 		EndTime:   toTime,
 	}
 	return &kmlTrack, nil
-}
-
-const feetPerMeter = 3.28084
-
-// AeroAlt2Meters converts altitude values emitted by AeroAPI,
-// which are expressed in units of 100 feet, into meters
-func aeroAlt2Meters(altD100ft float64) float64 {
-	feetAgl := altD100ft * 100
-	return feetAgl / feetPerMeter
 }

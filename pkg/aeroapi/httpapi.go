@@ -5,15 +5,9 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
-
-	"github.com/joho/godotenv"
+	"time"
 )
-
-const CfgitemApiKey = "AEROAPI_API_KEY"
-const CfgitemApiUrl = "AEROAPI_API_URL"
-const CfgitemVerbose = "VERBOSE"
 
 type HttpAeroApi struct {
 	Verbose bool
@@ -21,24 +15,19 @@ type HttpAeroApi struct {
 	ApiUrl  string
 }
 
-func HttpApiFromDotFiles(dotFiles ...string) (*HttpAeroApi, error) {
-	envMap, err := godotenv.Read(dotFiles...)
-	if err != nil {
-		return nil, err
+func (c *HttpAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) string {
+	endpoint := fmt.Sprintf("/flights/%s", tailNumber)
+	if !cutoffTime.IsZero() {
+		endpoint += fmt.Sprintf("?&end=%s", cutoffTime.Format(time.RFC3339))
 	}
-	verbose, verboseErr := strconv.ParseBool(envMap[CfgitemVerbose])
-	if verboseErr != nil {
-		return nil, newApiError("process dotfiles", CfgitemVerbose, verboseErr)
-	}
-	api := &HttpAeroApi{
-		ApiKey:  envMap[CfgitemApiKey],
-		ApiUrl:  envMap[CfgitemApiUrl],
-		Verbose: verbose,
-	}
-	return api, nil
+	return endpoint
 }
 
-func (c *HttpAeroApi) Get(endpoint string) ([]byte, error) {
+func (c *HttpAeroApi) GetTrackForFlightRef(flightId string) string {
+	return fmt.Sprintf("/flights/%s/track", flightId)
+}
+
+func (c *HttpAeroApi) Load(endpoint string) ([]byte, error) {
 	const pathSep = "/"
 	requestUrl := fmt.Sprintf("%s%s%s", strings.TrimRight(c.ApiUrl, pathSep), pathSep, strings.TrimLeft(endpoint, pathSep))
 	if c.Verbose {
@@ -64,7 +53,8 @@ func (c *HttpAeroApi) Get(endpoint string) ([]byte, error) {
 	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		responseErr := fmt.Errorf("statusCode(%d), status(%s)", resp.StatusCode, resp.Status)
+		responsePayload, _ := io.ReadAll(resp.Body)
+		responseErr := fmt.Errorf("statusCode(%d), status(%s), body(%s)", resp.StatusCode, resp.Status, string(responsePayload))
 		return nil, newApiError("get successful response", requestUrl, responseErr)
 	}
 
