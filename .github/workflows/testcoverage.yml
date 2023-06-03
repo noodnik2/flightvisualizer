@@ -1,0 +1,43 @@
+name: Run Unit Tests & Generate Coverage Reports
+
+on:
+  push:
+    branches:
+      - main
+      - mock-output-folder
+  pull_request:
+    types: [opened, edited, reopened]
+    branches: [main]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.20.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Install dependencies
+        run: go get .
+      - name: Test with Go
+        run: go test ./...
+  coverage:
+    needs: test
+    strategy:
+      matrix:
+        go-version: [1.20.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Update coverage report
+        uses: ncruces/go-coverage-report@v0.1.7
+        with:
+          report: 'true'
+          chart: 'true'
+          amend: 'false'
+        continue-on-error: true
