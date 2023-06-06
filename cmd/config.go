@@ -15,75 +15,99 @@ import (
 
 func init() {
 	rootCmd.AddCommand(configCmd)
-	configCmd.AddCommand(showConfigCmd)
 	configCmd.AddCommand(editConfigCmd)
 }
 
 var configCmd = &cobra.Command{
-	Use:   "config",
-	Short: fmt.Sprintf("Facilitates configuration of the %s", rootCmd.Short),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return showConfigCmd.RunE(showConfigCmd, nil)
-		}
-		return errors.New("invalid argument(s)")
-	},
-}
+	Use:     "config",
+	Short:   "Shows current configuration",
+	Version: rootCmd.Version,
+	RunE: func(cmd *cobra.Command, args []string) (returnErr error) {
 
-var showConfigCmd = &cobra.Command{
-	Use:   "show",
-	Short: "Shows current configuration",
-	RunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().NArg() != 0 {
+			return errors.New("invalid syntax")
+		}
 
-		configFilename := internal.GetConfigFilename()
-		var config internal.Config
-		if loadConfigErr := configurator.LoadConfig(configFilename, &config); loadConfigErr != nil {
-			log.Printf("NOTE: %v\n", loadConfigErr)
+		var configFilename string
+		if configFilename, returnErr = getArgs(cmd); returnErr == nil {
+			cmd.SilenceUsage = true
+			returnErr = showConfig(configFilename)
 		}
-		items, getInfoErr := configurator.GetConfigEnvItems(config)
-		if getInfoErr != nil {
-			log.Fatalf("ERROR: %v\n", getInfoErr)
-		}
-		log.Printf("from '%s':\n", configFilename)
-		for _, configItem := range items {
-			var val any
-			if configItem.Secret != "" {
-				val = "*******"
-			} else {
-				val = configItem.Val
-			}
-			fmt.Printf("%s: %v\n", configItem.Name, val)
-		}
-		return nil
+
+		return
 	},
 }
 
 var editConfigCmd = &cobra.Command{
-	Use:   "edit",
-	Short: "Edits current configuration",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Use:     "edit",
+	Short:   "Edits current configuration",
+	Version: rootCmd.Version,
+	RunE: func(cmd *cobra.Command, args []string) (returnErr error) {
 
-		configFilename := internal.GetConfigFilename()
-		configDir := filepath.Dir(configFilename)
-		if _, err := os.Stat(configDir); err != nil {
-			log.Fatalf("NOTE: config file directory(%s) not found; please create it\n", configDir)
+		var configFilename string
+		if configFilename, returnErr = getArgs(cmd); returnErr == nil {
+			cmd.SilenceUsage = true
+			if returnErr = editConfig(configFilename); returnErr == nil {
+				returnErr = showConfig(configFilename)
+			}
 		}
 
-		log.Printf("editing '%s':\n", configFilename)
-
-		var config internal.Config
-		if loadConfigErr := configurator.LoadConfig(configFilename, &config); loadConfigErr != nil {
-			log.Printf("NOTE: %v\n", loadConfigErr)
-		}
-
-		if editErr := configurator.EditConfig(&config); editErr != nil {
-			log.Fatalf("ERROR: %v\n", editErr)
-		}
-
-		if saveErr := configurator.SaveConfig(configFilename, config); saveErr != nil {
-			log.Fatalf("ERROR: %v\n", saveErr)
-		}
-
-		return nil
+		return
 	},
+}
+
+func getArgs(cmd *cobra.Command) (configFilename string, returnErr error) {
+	var verbose bool
+	if verbose, returnErr = cmd.Flags().GetBool(cmdFlagRootVerbose); returnErr == nil {
+		configFilename = internal.GetConfigFilename(verbose)
+	}
+	return
+}
+
+func showConfig(configFilename string) (returnErr error) {
+
+	var config internal.Config
+	if loadConfigErr := configurator.LoadConfig(configFilename, &config); loadConfigErr != nil {
+		log.Printf("NOTE: %v\n", loadConfigErr)
+	}
+
+	var items []configurator.ConfigEnvItem
+	items, returnErr = configurator.GetConfigEnvItems(config)
+	if returnErr != nil {
+		return
+	}
+
+	log.Printf("INFO: current configuration:\n")
+	for _, configItem := range items {
+		var val any
+		if configItem.Secret != "" {
+			val = "*******"
+		} else {
+			val = configItem.Val
+		}
+		log.Printf("%s: %v\n", configItem.Name, val)
+	}
+	return
+}
+
+func editConfig(configFilename string) (returnErr error) {
+
+	configDir := filepath.Dir(configFilename)
+	if _, configDirErr := os.Stat(configDir); configDirErr != nil {
+		return fmt.Errorf("config file directory(%s) not found", configDir)
+	}
+
+	var config internal.Config
+	if loadConfigErr := configurator.LoadConfig(configFilename, &config); loadConfigErr != nil {
+		log.Printf("NOTE: %v\n", loadConfigErr)
+	}
+
+	log.Printf("INFO: editing configuration:\n")
+	if returnErr = configurator.EditConfig(&config); returnErr != nil {
+		return
+	}
+
+	log.Printf("INFO: saving configuration\n")
+	returnErr = configurator.SaveConfig(configFilename, config)
+	return
 }

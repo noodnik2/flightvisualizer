@@ -3,7 +3,6 @@ package aeroapi
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/noodnik2/flightvisualizer/pkg/persistence"
@@ -40,11 +39,8 @@ type Api interface {
 
 type ArtifactLocator interface {
 	// GetFlightIdsRef returns a reference used to obtain the flight identifier(s) for the desired track(s).
-	// A return value enclosed by square brackets can be interpreted as a comma-separated-list of flight identifier(s);
-	// otherwise it's an address (such as a URL or file name) used within the context to obtain the desired list.
-	// TODO the requirement for using a reference type containing a list of flight ids has been deprecated
-	//  the support for it here should be removed (see newer implementation of "sourceTypeSingleTrackArtifact")
-	GetFlightIdsRef(tailNumber string, cutoffTime time.Time) string
+	// The return value is an address (such as a URL or file name) used within context to obtain the desired list.
+	GetFlightIdsRef(tailNumber string, cutoffTime time.Time) (string, error)
 	// GetTrackForFlightRef returns a reference (such as a URL or file name) used to obtain the desired track data.
 	GetTrackForFlightRef(flightId string) string
 }
@@ -67,12 +63,9 @@ type RetrieverSaverApiImpl struct {
 // GetFlightIds returns the AeroAPI identifier(s) of the flight(s) specified by the parameters
 // cutoffTime (optional) - most recent time for a flight to be considered
 func (a *RetrieverSaverApiImpl) GetFlightIds(tailNumber string, cutoffTime time.Time) ([]string, error) {
-	endpoint := a.Retriever.GetFlightIdsRef(tailNumber, cutoffTime)
-	if strings.HasPrefix(endpoint, "[") && strings.HasSuffix(endpoint, "]") {
-		// TODO the requirement for using a reference type containing a list of flight ids has been deprecated
-		//  the support for it here should be removed (see newer implementation of "sourceTypeSingleTrackArtifact")
-		// see contract of 'GetFlightIdsRef' about "A return value enclosed by square brackets"...
-		return strings.Split(endpoint[1:len(endpoint)-1], ","), nil
+	endpoint, getFidsErr := a.Retriever.GetFlightIdsRef(tailNumber, cutoffTime)
+	if getFidsErr != nil {
+		return nil, newFlightApiError("get endpoint", "retrieving flight IDs", getFidsErr)
 	}
 	responseBytes, getErr := a.Retriever.Load(endpoint)
 	if getErr != nil {
@@ -80,7 +73,10 @@ func (a *RetrieverSaverApiImpl) GetFlightIds(tailNumber string, cutoffTime time.
 	}
 
 	if a.Saver != nil {
-		saveUri := a.Saver.GetFlightIdsRef(tailNumber, cutoffTime)
+		saveUri, getSaveFidsErr := a.Saver.GetFlightIdsRef(tailNumber, cutoffTime)
+		if getSaveFidsErr != nil {
+			return nil, newFlightApiError("get URI", "saving flight IDs", getSaveFidsErr)
+		}
 		if getSaveErr := a.Saver.Save(saveUri, responseBytes); getSaveErr != nil {
 			return nil, newFlightApiError("save get flight ids response", endpoint, getSaveErr)
 		}

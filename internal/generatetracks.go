@@ -43,6 +43,7 @@ type TracksCommandArgs struct {
 	NoBanking        bool
 	SaveResponses    bool
 	VerboseOperation bool
+	DebugOperation   bool
 	FromArtifacts    string
 	ArtifactsDir     string
 	KmlLayers        string
@@ -77,7 +78,7 @@ func (tca TracksCommandArgs) GenerateTracks() error {
 
 	// if indicated, "launch" the (first of the) generated KML visualization(s)
 	if tca.LaunchFirstKml && firstKmlFilename != "" {
-		log.Printf("INFO: Launching '%s'", firstKmlFilename)
+		log.Printf("INFO: Launching '%s'\n", firstKmlFilename)
 		if openErr := ios.LaunchFile(firstKmlFilename); openErr != nil {
 			return fmt.Errorf("error returned from launching(%s): %v", firstKmlFilename, openErr)
 		}
@@ -88,8 +89,8 @@ func (tca TracksCommandArgs) GenerateTracks() error {
 
 func (tca TracksCommandArgs) saveKmlTracks(kmlTracks []*kml.Track, kmlLayersUi string) (string, error) {
 	nKmlDocs := len(kmlTracks)
-	if tca.isVerbose() || nKmlDocs > 1 {
-		log.Printf("INFO: writing %d %s KML document(s)", nKmlDocs, kmlLayersUi)
+	if tca.IsVerbose() || nKmlDocs > 1 {
+		log.Printf("INFO: writing %d %s KML document(s)\n", nKmlDocs, kmlLayersUi)
 	}
 
 	// save the KML document(s) produced along with their asset(s) as `.kmz` file(s)
@@ -124,7 +125,7 @@ func (tca TracksCommandArgs) newKmlTrackGenerator(sortedKmlLayers []string) (*km
 		case TracksLayerCamera:
 			kmlBuilder = &builders.CameraBuilder{
 				AddBankAngle: !tca.NoBanking,
-				VerboseFlag:  tca.isVerbose(),
+				DebugFlag:    tca.DebugOperation,
 			}
 		case TracksLayerPath:
 			kmlBuilder = &builders.PathBuilder{
@@ -150,7 +151,7 @@ type kmlTrackFactory func(kml.TrackGenerator) ([]*kml.Track, error)
 func (tca TracksCommandArgs) newTrackFactory() kmlTrackFactory {
 	var trackFactory kmlTrackFactory
 
-	verbose := tca.isVerbose()
+	verbose := tca.IsVerbose()
 	artifactsDir := tca.getArtifactsDir()
 
 	switch tca.getSourceType() {
@@ -171,7 +172,7 @@ func (tca TracksCommandArgs) newTrackFactory() kmlTrackFactory {
 		trackFactory = func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
 			if tca.SaveResponses {
 				// there's no good reason to save data already coming from local files
-				log.Printf("NOTE: inappropriate 'save responses' option ignored")
+				log.Printf("NOTE: inappropriate 'save responses' option ignored\n")
 			}
 			aeroApi := &aeroapi.RetrieverSaverApiImpl{
 				// reading AeroAPI data from saved artifact files
@@ -249,7 +250,7 @@ func (tca TracksCommandArgs) getArtifactsDir() string {
 	return tca.Config.ArtifactsDir
 }
 
-func (tca TracksCommandArgs) isVerbose() bool {
+func (tca TracksCommandArgs) IsVerbose() bool {
 	return tca.VerboseOperation || tca.Config.Verbose
 }
 

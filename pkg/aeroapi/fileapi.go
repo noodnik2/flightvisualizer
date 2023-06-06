@@ -39,18 +39,10 @@ func IsFlightIdsArtifactFilename(fn string) bool {
 	return strings.HasPrefix(base, flightIdsArtifactFilenamePrefix) && strings.HasSuffix(base, flightIdsArtifactFilenameSuffix)
 }
 
-func (c *FileAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) string {
+func (c *FileAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) (string, error) {
 	var fileName string
 	if c.FlightIdsFileName != "" {
 		fileName = c.FlightIdsFileName
-		// handle the case of invoking a saved track file directly; use extracted flight ID
-		baseFilename := filepath.Base(fileName)
-		if strings.HasPrefix(baseFilename, trackArtifactFilenamePrefix) && strings.HasSuffix(baseFilename, trackArtifactFilenameSuffix) {
-			// TODO the requirement for using a reference type containing a list of flight ids has been deprecated
-			//  the support for it here should be removed (see newer implementation of "sourceTypeSingleTrackArtifact")
-			// the "flight ID" is simply the part in between this prefix and suffix
-			return fmt.Sprintf("[%s]", baseFilename[4:len(baseFilename)-5])
-		}
 	} else {
 		var queryId string
 		if cutoffTime.IsZero() {
@@ -60,11 +52,14 @@ func (c *FileAeroApi) GetFlightIdsRef(tailNumber string, cutoffTime time.Time) s
 		}
 		fileName = MakeFlightIdsArtifactFilename(queryId)
 	}
+	if !IsFlightIdsArtifactFilename(filepath.Base(fileName)) {
+		return "", fmt.Errorf("unrecognized flight ids filename(%s)", fileName)
+	}
 	if filepath.Dir(fileName) == "." {
 		// use the artifacts directory if not specified
-		return filepath.Join(c.ArtifactsDir, fileName)
+		return filepath.Join(c.ArtifactsDir, fileName), nil
 	}
-	return fileName
+	return fileName, nil
 }
 
 func (c *FileAeroApi) GetTrackForFlightRef(flightId string) string {

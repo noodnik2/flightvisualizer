@@ -18,7 +18,7 @@ func (pb *PathBuilder) Name() string {
     return "Path"
 }
 
-func (pb *PathBuilder) Build(aeroTrackPositions []aeroapi.Position) *KmlProduct {
+func (pb *PathBuilder) Build(aeroTrackPositions []aeroapi.Position) (*KmlProduct, error) {
 
     var coordinates []gokml.Coordinate
     for _, position := range aeroTrackPositions {
@@ -60,5 +60,5 @@ func (pb *PathBuilder) Build(aeroTrackPositions []aeroapi.Position) *KmlProduct 
         flightLine,
     )
 
-    return &KmlProduct{Root: mainFolder}
+    return &KmlProduct{Root: mainFolder}, nil
 }
