@@ -30,6 +30,7 @@ func TestNewKmlTrack(t *testing.T) {
 		t.Run(fmt.Sprintf("%T", tc.tracker), func(t *testing.T) {
 			requirer := require.New(t)
 			kmlTrack, newKmlTrackErr := tc.tracker.Generate(newMockTestAeroApiTrack())
+			// TODO add a meaningful test
 			requirer.NoError(newKmlTrackErr)
 			requirer.NotEmpty(kmlTrack)
 		})

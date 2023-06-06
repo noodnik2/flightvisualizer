@@ -28,6 +28,7 @@ type TrackGenerator interface {
 
 // TrackBuilderEnsemble is a named set of KmlTrackBuilder instances
 type TrackBuilderEnsemble struct {
+	Name     string
 	Builders []builders.KmlTrackBuilder
 }
 

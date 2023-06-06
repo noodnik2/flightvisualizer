@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
 	"log"
@@ -54,24 +55,21 @@ type TracksCommandArgs struct {
 
 func (tca TracksCommandArgs) GenerateTracks() error {
 
-	// order layer builder(s) for deterministic output
-	sortedKmlLayers := strings.Split(tca.KmlLayers, ",")
-	sort.Strings(sortedKmlLayers)
-	kmlGenerator, getKmlGeneratorErr := tca.newKmlTrackGenerator(sortedKmlLayers)
+	kmlGenerator, getKmlGeneratorErr := tca.newKmlTrackGenerator(strings.Split(tca.KmlLayers, ","))
 	if getKmlGeneratorErr != nil {
 		return getKmlGeneratorErr
 	}
 
-	trackFactory := tca.newTrackFactory()
-	if trackFactory == nil {
-		return fmt.Errorf("no KML track factory could be created")
+	trackFactory, trackFactoryErr := tca.newTrackFactory()
+	if trackFactoryErr != nil {
+		return fmt.Errorf("no KML track factory could be created: %v", trackFactoryErr)
 	}
 	kmlTracks, generateKmlTracksErr := trackFactory(kmlGenerator)
 	if generateKmlTracksErr != nil {
 		return generateKmlTracksErr
 	}
 
-	firstKmlFilename, saveKmlErr := tca.saveKmlTracks(kmlTracks, strings.Join(sortedKmlLayers, "-"))
+	firstKmlFilename, saveKmlErr := tca.saveKmlTracks(kmlTracks, kmlGenerator.Name)
 	if saveKmlErr != nil {
 		return saveKmlErr
 	}
@@ -117,9 +115,18 @@ func (tca TracksCommandArgs) saveKmlTracks(kmlTracks []*kml.Track, kmlLayersUi s
 	return firstKmlFilename, nil
 }
 
-func (tca TracksCommandArgs) newKmlTrackGenerator(sortedKmlLayers []string) (*kml.TrackBuilderEnsemble, error) {
+func (tca TracksCommandArgs) newKmlTrackGenerator(kmlLayers []string) (*kml.TrackBuilderEnsemble, error) {
+
+	// order layer builder(s) for deterministic output
+	sort.Strings(kmlLayers)
+
+	builtLayers := make([]string, 0, len(kmlLayers))
 	var kmlBuilders []builders.KmlTrackBuilder
-	for _, kmlLayer := range sortedKmlLayers {
+	for _, kmlLayer := range kmlLayers {
+		if len(builtLayers) > 0 && kmlLayer == builtLayers[len(builtLayers)-1] {
+			// ignore duplicates
+			continue
+		}
 		var kmlBuilder builders.KmlTrackBuilder
 		switch kmlLayer {
 		case TracksLayerCamera:
@@ -140,99 +147,121 @@ func (tca TracksCommandArgs) newKmlTrackGenerator(sortedKmlLayers []string) (*km
 			return nil, fmt.Errorf("unrecognized kmlLayer(%s); supported: %v", kmlLayer,
 				strings.Join(TracksLayersSupported, ","))
 		}
+		builtLayers = append(builtLayers, kmlLayer)
 		kmlBuilders = append(kmlBuilders, kmlBuilder)
 	}
 
-	return &kml.TrackBuilderEnsemble{Builders: kmlBuilders}, nil
+	ensemble := &kml.TrackBuilderEnsemble{
+		Name:     strings.Join(builtLayers, "-"),
+		Builders: kmlBuilders,
+	}
+	return ensemble, nil
 }
 
 type kmlTrackFactory func(kml.TrackGenerator) ([]*kml.Track, error)
 
-func (tca TracksCommandArgs) newTrackFactory() kmlTrackFactory {
-	var trackFactory kmlTrackFactory
+func (tca TracksCommandArgs) newTrackFactory() (kmlTrackFactory, error) {
 
-	verbose := tca.IsVerbose()
-	artifactsDir := tca.getArtifactsDir()
+	st, stErr := tca.getSourceType()
+	if stErr != nil {
+		return nil, stErr
+	}
 
-	switch tca.getSourceType() {
+	switch st {
 	case sourceTypeSingleTrackArtifact:
-		trackFactory = func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
-			track, getTfaErr := tca.getTrackFromArtifact()
-			if getTfaErr != nil {
-				return nil, getTfaErr
-			}
-			kmlTrack, err := tracker.Generate(track)
-			if err != nil {
-				return nil, err
-			}
-			return []*kml.Track{kmlTrack}, nil
-		}
+		return singleTrackArtifactFactory(tca), nil
 
 	case sourceTypeMultiTrackArtifact:
-		trackFactory = func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
-			if tca.SaveResponses {
-				// there's no good reason to save data already coming from local files
-				log.Printf("NOTE: inappropriate 'save responses' option ignored\n")
-			}
-			aeroApi := &aeroapi.RetrieverSaverApiImpl{
-				// reading AeroAPI data from saved artifact files
-				Retriever: &aeroapi.FileAeroApi{
-					ArtifactsDir:      artifactsDir,
-					FlightIdsFileName: tca.FromArtifacts,
-				},
-			}
-			tc := iaeroapi.TracksConverter{
-				Verbose:     verbose,
-				FlightCount: tca.FlightCount,
-				TailNumber:  tca.TailNumber,
-				CutoffTime:  tca.CutoffTime,
-			}
-			return tc.Convert(aeroApi, tracker)
-		}
+		return multiTrackArtifactFactory(tca), nil
 
 	case sourceTypeMultiTrackRemote:
-		trackFactory = func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
-			var artifactSaver aeroapi.ArtifactSaver
-			if tca.SaveResponses {
-				artifactSaver = &aeroapi.FileAeroApi{ArtifactsDir: artifactsDir}
-			}
-			aeroApi := &aeroapi.RetrieverSaverApiImpl{
-				// reading AeroAPI data from live AeroAPI REST API calls
-				Retriever: &aeroapi.HttpAeroApi{
-					Verbose: verbose,
-					ApiKey:  tca.Config.AeroApiKey,
-					ApiUrl:  tca.Config.AeroApiUrl,
-				},
-				Saver: artifactSaver,
-			}
-			tc := iaeroapi.TracksConverter{
-				Verbose:     verbose,
-				FlightCount: tca.FlightCount,
-				TailNumber:  tca.TailNumber,
-				CutoffTime:  tca.CutoffTime,
-			}
-			return tc.Convert(aeroApi, tracker)
-		}
+		return multiTrackRemoteFactory(tca), nil
 	}
-	return trackFactory
+
+	return nil, errors.New("can't determine source type")
 }
 
-func (tca TracksCommandArgs) getSourceType() sourceType {
+func multiTrackRemoteFactory(tca TracksCommandArgs) kmlTrackFactory {
+	return func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
+
+		var artifactSaver aeroapi.ArtifactSaver
+		if tca.SaveResponses {
+			artifactSaver = &aeroapi.FileAeroApi{ArtifactsDir: tca.getArtifactsDir()}
+		}
+
+		verbose := tca.IsVerbose()
+		aeroApi := &aeroapi.RetrieverSaverApiImpl{
+			// reading AeroAPI data from live AeroAPI REST API calls
+			Retriever: &aeroapi.HttpAeroApi{
+				Verbose: verbose,
+				ApiKey:  tca.Config.AeroApiKey,
+				ApiUrl:  tca.Config.AeroApiUrl,
+			},
+
+			Saver: artifactSaver,
+		}
+		tc := iaeroapi.TracksConverter{
+			Verbose:     verbose,
+			FlightCount: tca.FlightCount,
+			TailNumber:  tca.TailNumber,
+			CutoffTime:  tca.CutoffTime,
+		}
+		return tc.Convert(aeroApi, tracker)
+	}
+}
+
+func multiTrackArtifactFactory(tca TracksCommandArgs) kmlTrackFactory {
+	return func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
+		if tca.SaveResponses {
+			// there's no good reason to save data already coming from local files
+			log.Printf("NOTE: inappropriate 'save responses' option ignored\n")
+		}
+		aeroApi := &aeroapi.RetrieverSaverApiImpl{
+			// reading AeroAPI data from saved artifact files
+			Retriever: &aeroapi.FileAeroApi{
+				ArtifactsDir:      tca.getArtifactsDir(),
+				FlightIdsFileName: tca.FromArtifacts,
+			},
+		}
+		tc := iaeroapi.TracksConverter{
+			Verbose:     tca.IsVerbose(),
+			FlightCount: tca.FlightCount,
+			TailNumber:  tca.TailNumber,
+			CutoffTime:  tca.CutoffTime,
+		}
+		return tc.Convert(aeroApi, tracker)
+	}
+}
+
+func singleTrackArtifactFactory(tca TracksCommandArgs) kmlTrackFactory {
+	return func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
+		track, getTfaErr := tca.getTrackFromArtifact()
+		if getTfaErr != nil {
+			return nil, getTfaErr
+		}
+		kmlTrack, err := tracker.Generate(track)
+		if err != nil {
+			return nil, err
+		}
+		return []*kml.Track{kmlTrack}, nil
+	}
+}
+
+func (tca TracksCommandArgs) getSourceType() (sourceType, error) {
 
 	if tca.FromArtifacts == "" {
-		return sourceTypeMultiTrackRemote
+		return sourceTypeMultiTrackRemote, nil
 	}
 
 	if aeroapi.IsTrackArtifactFilename(tca.FromArtifacts) {
-		return sourceTypeSingleTrackArtifact
+		return sourceTypeSingleTrackArtifact, nil
 	}
 
 	if aeroapi.IsFlightIdsArtifactFilename(tca.FromArtifacts) {
-		return sourceTypeMultiTrackArtifact
+		return sourceTypeMultiTrackArtifact, nil
 	}
 
-	log.Printf("ERROR: unrecognized artifact(%s)\n", tca.FromArtifacts)
-	return sourceTypeUnrecognized
+	return sourceTypeUnrecognized, fmt.Errorf("unrecognized artifact(%s)", tca.FromArtifacts)
 }
 
 func (tca TracksCommandArgs) getTrackFromArtifact() (*aeroapi.Track, error) {
