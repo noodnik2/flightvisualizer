@@ -8,6 +8,17 @@ on:
 env:
   GO_VERSION: '1.20'
 
+# Consider using https://github.com/softprops/action-gh-release instead
+# Also see https://github.com/filips123/PWAsForFirefox/blob/main/.github/workflows/extension.yaml for an idea of how to set the version,
+# and https://github.com/filips123/PWAsForFirefox/blob/bb27fbbd8c6573f0834afbea3d658f2241cfee56/.github/workflows/native.yaml#L304
+# for an idea of how to use the aforementioned action to publish to the release Assets
+
+# Also, check out https://giphy.com/apps/giphycapture
+
+# GE Link https://earth.google.com/web/?kml=
+# URL to my Kmz: https://raw.githubusercontent.com/noodnik2/flightvisualizer/master/artifacts/fvk_N335SP_230524184936Z-201831Z_camera-path-vector.kmz
+# Both together: https://earth.google.com/web/?kml=https://raw.githubusercontent.com/noodnik2/flightvisualizer/master/artifacts/fvk_N335SP_230524184936Z-201831Z_camera-path-vector.kmz
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,5 +33,5 @@ jobs:
       - name: Upload Release Distribution
         uses: actions/upload-artifact@v3
         with:
-          name: Distribution Package
+          name: flightvisualizer
           path: dist/flightvisualizer.zip
