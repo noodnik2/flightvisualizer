@@ -1,7 +1,6 @@
 vendor/
 dist/
 tmp/
-.env.local
 **/.idea
 **/*.iml
 artifacts.bak/**
