@@ -12,7 +12,7 @@ import (
 	"github.com/noodnik2/flightvisualizer/internal"
 )
 
-var Version = "v0.0.1"
+var Version = "v0.0.2"
 
 var rootCmd = &cobra.Command{
 	Use:     os.Args[0],
