@@ -70,6 +70,7 @@ func TestFileAeroApi_GetUris(t *testing.T) {
 		cutoffTime           time.Time
 		expectedFlightIdsUri string
 		expectedTrackUri     string
+		expectedErrors       []string
 	}{
 		{
 			name:                 "without artifacts dir",
@@ -113,12 +114,13 @@ func TestFileAeroApi_GetUris(t *testing.T) {
 			expectedTrackUri:     filepath.Join("eDir", MakeTrackArtifactFilename("eFid")),
 		},
 		{
-			name:                 "with track filename",
+			name:                 "with unrecognized (e.g., track) filename",
 			artifactsDir:         "fDir",
 			flightIdsFileName:    MakeTrackArtifactFilename("f99"),
 			flightId:             "fFid",
 			expectedFlightIdsUri: "[f99]",
 			expectedTrackUri:     filepath.Join("fDir", MakeTrackArtifactFilename("fFid")),
+			expectedErrors:       []string{"unrecognized"}, // this function no longer handles track files
 		},
 	}
 
@@ -127,8 +129,17 @@ func TestFileAeroApi_GetUris(t *testing.T) {
 			requirer := require.New(t)
 
 			fileAeroApi := &FileAeroApi{ArtifactsDir: tc.artifactsDir, FlightIdsFileName: tc.flightIdsFileName}
-			requirer.Equal(tc.expectedFlightIdsUri, fileAeroApi.GetFlightIdsRef(tc.tailNumber, tc.cutoffTime))
-			requirer.Equal(tc.expectedTrackUri, fileAeroApi.GetTrackForFlightRef(tc.flightId))
+			fidsRef, getFidsRefErr := fileAeroApi.GetFlightIdsRef(tc.tailNumber, tc.cutoffTime)
+			if tc.expectedErrors != nil {
+				requirer.Error(getFidsRefErr)
+				for _, expectedErr := range tc.expectedErrors {
+					requirer.Contains(getFidsRefErr.Error(), expectedErr)
+				}
+			} else {
+				requirer.NoError(getFidsRefErr)
+				requirer.Equal(tc.expectedFlightIdsUri, fidsRef)
+				requirer.Equal(tc.expectedTrackUri, fileAeroApi.GetTrackForFlightRef(tc.flightId))
+			}
 		})
 	}
 }

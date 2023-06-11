@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image/color"
 	"io/fs"
-	"log"
 	"path/filepath"
 	"time"
 
@@ -36,11 +35,11 @@ func (vb *VectorBuilder) Name() string {
 //go:embed images
 var embeddedImages embed.FS
 
-func (vb *VectorBuilder) Build(aeroTrackPositions []aeroapi.Position) *KmlProduct {
+func (vb *VectorBuilder) Build(aeroTrackPositions []aeroapi.Position) (*KmlProduct, error) {
 
 	vectorArrowPngBytes, getErr := getEmbeddedFileContents(embeddedImages, vectorArrowRelPath)
 	if getErr != nil {
-		log.Fatalf("can't get embedded file: %v\n", getErr)
+		return nil, fmt.Errorf("can't get embedded file: %v", getErr)
 	}
 
 	vectorArrowHref := filepath.Base(vectorArrowRelPath)
@@ -91,7 +90,7 @@ func (vb *VectorBuilder) Build(aeroTrackPositions []aeroapi.Position) *KmlProduc
 	).
 		Append(positionReferences...)
 
-	return thing
+	return thing, nil
 }
 
 func getEmbeddedFileContents(fs fs.FS, fileName string) ([]byte, error) {

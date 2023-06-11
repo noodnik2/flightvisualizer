@@ -27,8 +27,8 @@ including MacOs, Linux and Windows.
 The "home" source control repository of Flight Visualizer is on GitHub at
 [noodnik2/flightvisualizer](https://github.com/noodnik2/flightvisualizer). 
 It was written in, and leverages some relatively recent features of [golang](https://go.dev/).
-Its initial test suite uses `go1.20.2 darwin/amd64`, though it should work on comparable
-distributions of `go` as well.
+Its initial test suite uses `go1.20.2 darwin/amd64`, though it should build successfully
+with any version of `go` version `1.18` or greater.
 
 On a fresh clone / fork of the repository, you should be able to...
 
@@ -48,6 +48,8 @@ ok      github.com/noodnik2/flightvisualizer/internal/kml       0.320s
 ok      github.com/noodnik2/flightvisualizer/pkg/aeroapi        0.372s
 ```
 </details>
+
+See [CONTRIBUTING](./CONTRIBUTING.md) for more information.
 
 ## Setup / Configuration
 
@@ -105,10 +107,15 @@ Running the command without options, or with an incomplete set of options, revea
 
 ### Simple Case 
 
-In this simple case, default [KML] visualizations are created for the most recent flights available via [AeroAPI]
-for tail number [N335SP](https://flightaware.com/live/flight/N335SP) (BTW, [Maui Aviators](https://www.mauiaviators.com/)
-is an ultra-cool place to visit the next time you're in Maui 🤙👍), and the most recent one is launched right away into
-[Google Earth Pro] (assuming it's registered to open [.kmz] files in your operating system).
+In this simple case, default [KML] visualizations are created for the (at the time) most recent flights available
+via [AeroAPI] for tail number `N335SP`, and the most recent one  is launched right away into [Google Earth Pro],
+which was registered to open [.kmz] files in the operating system.
+- If you'd like to take a virtual tour around the perimeter of Maui, consider visualizing this flight yourself
+  by loading [the output file](./artifacts/fvk__230523203550Z-22102Z_camera-path-vector.kmz) into a KML
+  client such as [Google Earth] ([Google Maps] isn't recommended since most of this flight is over water 😉).
+- _BTW, [N335SP](https://flightaware.com/live/flight/N335SP) is operated by [Maui Aviators](https://www.mauiaviators.com/)
+  which I've found to be an ultra-cool FBO for flight instruction, or to get checked out, for some aerial
+  adventures when visiting Maui 🤙👍_
 
 <details>
   <summary><code>$ fviz tracks --tailNumber N335SP --launch</code></summary>
@@ -170,13 +177,20 @@ on/off from within Google Earth:
 An important use case for development or support of Flight Visualizer application is to (re-) convert
 already retrieved responses from [AeroAPI] into [KML] (e.g., to avoid making unnecessary calls to the API).
 
-This can be accomplished by using the `--fromArtifacts` option, pointing it to the file created by the
-`--saveArtifacts` option in which AeroAPI's response from the `/flights/{tailNumber}` REST API call is
-recorded; e.g.:
+This can be accomplished by using the `--fromArtifacts` option, pointing it to a file previously created
+(i.e., by the `--saveArtifacts` option) in which AeroAPI's response from the `/flights/{tailNumber}` REST
+API call is recorded. For example:
 
 ```shell
-$ fviz tracks --fromArtifacts artifacts/fvf_N6189Q_cutoff_20230518T204000-0400.json
+$ fviz tracks --fromArtifacts artifacts/fvf_N8731J_cutoff-20230531T083000-0700.json --flightCount 1
+2023/06/05 12:13:35 INFO: reading from file(artifacts/fvf_N8731J_cutoff-20230531T083000-0700.json)
+2023/06/05 12:13:35 INFO: reading from file(artifacts/fvt_SWA3774-1685372217-schedule-57p.json)
+2023/06/05 12:13:35 INFO: saving to file(fvk__230531150622Z-201824Z_camera-path-vector.kmz)
 ```
+
+The [output file produced by the command above](artifacts/fvk__230531150622Z-201824Z_camera-path-vector.kmz)
+visualizes an [actual flight from Los Angeles to Maui](artifacts/fvt_SWA3774-1685372217-schedule-57p.json)
+taken by some lucky vacationers on Southwest Airlines flight SWA3774 on May 31st.
 
 ## Enjoying Visualizations
 
@@ -218,6 +232,19 @@ produce visualizations _(including in real-time!)_ of simulated flights in [Goog
   in the [LICENSE](./LICENSE) file
 - Contributions to this project are encouraged, and guidelines are established
   in the [CONTRIBUTIONS](./CONTRIBUTING.md) file
+
+### Building Blocks
+
+Flight Visualizer builds atop many other open-source libraries, perhaps most notably:
+
+- [cobra](https://cobra.dev/) - _"A Framework for Modern CLI Apps in Go"_ 
+- [go-kml](https://github.com/twpayne/go-kml) - _"convenience methods for creating and writing KML documents"_
+
+The complete set of libraries used can be seen of course in the [go.mod](./go.mod) file.
+
+I'd like to express my heartfelt appreciation to the authors and supporters of these high quality
+open-source building blocks, enabling projects like this to quickly get started focusing on their
+mission and value-add: in this case, _vicarious aviation!_  
 
 [AeroAPI]: https://flightaware.com/commercial/aeroapi
 [KML]: https://developers.google.com/kml

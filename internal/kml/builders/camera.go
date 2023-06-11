@@ -10,18 +10,18 @@ import (
 
 type CameraBuilder struct {
 	AddBankAngle bool
-	VerboseFlag  bool
+	DebugFlag    bool
 }
 
 func (ctb *CameraBuilder) Name() string {
 	return "Camera"
 }
 
-func (ctb *CameraBuilder) Build(positions []aeroapi.Position) *KmlProduct {
+func (ctb *CameraBuilder) Build(positions []aeroapi.Position) (*KmlProduct, error) {
 	var frames []gokml.Element
 	nPositions := len(positions)
-	aeroapiMathUtil := &aeroapi.Math{
-		Verbose: ctb.VerboseFlag,
+	aeroApiMathUtil := &aeroapi.Math{
+		Debug: ctb.DebugFlag,
 	}
 	flyToMode := gokml.GxFlyToModeBounce // initial "bounce" into tour
 	var startTime time.Time
@@ -37,7 +37,7 @@ func (ctb *CameraBuilder) Build(positions []aeroapi.Position) *KmlProduct {
 
 		var bankAngle float64
 		if ctb.AddBankAngle {
-			bankAngle = float64(aeroapiMathUtil.GetBankAngle(thisPosition, nextPosition))
+			bankAngle = float64(aeroApiMathUtil.GetBankAngle(thisPosition, nextPosition))
 		}
 
 		deltaT := nextPosition.Timestamp.Sub(thisPosition.Timestamp)
@@ -66,5 +66,5 @@ func (ctb *CameraBuilder) Build(positions []aeroapi.Position) *KmlProduct {
 		gokml.GxPlaylist(frames...),
 	)
 
-	return &KmlProduct{Root: root}
+	return &KmlProduct{Root: root}, nil
 }

@@ -50,15 +50,8 @@ func TestGetFlightIdsResponseProcessing(t *testing.T) {
 		},
 		{
 			name:              "multiple flights from struct",
-			retriever:         &MockArtifactRetriever{Contents: newTestFlightsJsonContents(3)},
+			retriever:         &MockArtifactRetriever{Contents: newTestFlightsJsonContents(t, 3)},
 			expectedFlightIds: newTestFlightIds(3),
-		},
-		{
-			// this test case used to be relevant; TODO remove after confirming no longer a valid code path
-			name:              "multiple flights from struct no longer respects flightCount",
-			retriever:         &MockArtifactRetriever{Contents: newTestFlightsJsonContents(3)},
-			expectedFlightIds: newTestFlightIds(3),
-			flightCount:       1,
 		},
 		{
 			name:              "empty response",
@@ -73,7 +66,7 @@ func TestGetFlightIdsResponseProcessing(t *testing.T) {
 		},
 		{
 			name:      "saved response",
-			retriever: &MockArtifactRetriever{Contents: newTestTracksJsonContents(6)},
+			retriever: &MockArtifactRetriever{Contents: newTestTracksJsonContents(t, 6)},
 			assertions: func(requirer *require.Assertions, savedResponses *testResponseSaver) {
 				responses := savedResponses.responses
 				requirer.Equal(1, len(responses))
@@ -136,7 +129,7 @@ func TestGetTrackForFlightId(t *testing.T) {
 		},
 		{
 			name:                  "multiple tracks from struct",
-			retriever:             &MockArtifactRetriever{Contents: newTestTracksJsonContents(6)},
+			retriever:             &MockArtifactRetriever{Contents: newTestTracksJsonContents(t, 6)},
 			expectedPositionCount: 6,
 			assertions: func(requirer *require.Assertions, response *Track, _ *testResponseSaver) {
 				// check an arbitrary member of the returned collection
@@ -145,7 +138,7 @@ func TestGetTrackForFlightId(t *testing.T) {
 		},
 		{
 			name:                  "save track response",
-			retriever:             &MockArtifactRetriever{Contents: newTestTracksJsonContents(6)},
+			retriever:             &MockArtifactRetriever{Contents: newTestTracksJsonContents(t, 6)},
 			expectedPositionCount: 6,
 			assertions: func(requirer *require.Assertions, _ *Track, saver *testResponseSaver) {
 				// verify the expected saved response
@@ -195,26 +188,28 @@ func newTestFlightIds(n int) []string {
 	return flightIds
 }
 
-func newTestFlightsJsonContents(n int) []byte {
+func newTestFlightsJsonContents(t *testing.T, n int) []byte {
 	var fr FlightsResponse
 	for _, id := range newTestFlightIds(n) {
 		fr.Flights = append(fr.Flights, Flight{FlightId: id})
 	}
 	contents, err := json.Marshal(&fr)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		t.Fail()
 	}
 	return contents
 }
 
-func newTestTracksJsonContents(n int) []byte {
+func newTestTracksJsonContents(t *testing.T, n int) []byte {
 	tr := Track{FlightId: fmt.Sprintf("track%d", n)}
 	for i := 0; i < n; i++ {
 		tr.Positions = append(tr.Positions, newTestPosition(i))
 	}
 	contents, err := json.Marshal(&tr)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		t.Fail()
 	}
 	return contents
 }

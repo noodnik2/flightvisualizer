@@ -28,6 +28,7 @@ type TrackGenerator interface {
 
 // TrackBuilderEnsemble is a named set of KmlTrackBuilder instances
 type TrackBuilderEnsemble struct {
+	Name     string
 	Builders []builders.KmlTrackBuilder
 }
 
@@ -52,7 +53,11 @@ func (gxt *TrackBuilderEnsemble) Generate(aeroTrack *aeroapi.Track) (*Track, err
 
 	kmlAssets := make(map[string]any)
 	for _, kb := range gxt.Builders {
-		kmlThing := kb.Build(positions)
+		kmlThing, buildErr := kb.Build(positions)
+		if buildErr != nil {
+			fmt.Printf("NOTE: %s\n", buildErr)
+			continue
+		}
 		mainDocument.Append(kmlThing.Root)
 		for k, v := range kmlThing.Assets {
 			kmlAssets[k] = v

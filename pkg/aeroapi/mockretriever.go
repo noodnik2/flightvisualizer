@@ -11,8 +11,8 @@ type MockArtifactRetriever struct {
 	RequestedEndpoints []string
 }
 
-func (*MockArtifactRetriever) GetFlightIdsRef(tailNumber string, _ time.Time) string {
-	return "/fl/" + tailNumber
+func (*MockArtifactRetriever) GetFlightIdsRef(tailNumber string, _ time.Time) (string, error) {
+	return "/fl/" + tailNumber, nil
 }
 
 func (*MockArtifactRetriever) GetTrackForFlightRef(flightId string) string {

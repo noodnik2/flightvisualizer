@@ -12,7 +12,7 @@ func (*PlacemarkBuilder) Name() string {
     return "Placemark"
 }
 
-func (*PlacemarkBuilder) Build(aeroTrackPositions []aeroapi.Position) *KmlProduct {
+func (*PlacemarkBuilder) Build(aeroTrackPositions []aeroapi.Position) (*KmlProduct, error) {
 
     // - https://github.com/twpayne/go-kml/blob/a1a42dcf7ccb20a4b7b88b5bd61178cc14e050fc/kml_test.go#L870
     var positions []gokml.Element
@@ -39,5 +39,5 @@ func (*PlacemarkBuilder) Build(aeroTrackPositions []aeroapi.Position) *KmlProduc
         placemark,
     )
 
-    return &KmlProduct{Root: root}
+    return &KmlProduct{Root: root}, nil
 }

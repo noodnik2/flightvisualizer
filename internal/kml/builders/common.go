@@ -15,7 +15,7 @@ type KmlProduct struct {
 // KmlTrackBuilder can build a KmlProduct from a list of (location) coordinates
 type KmlTrackBuilder interface {
 	Name() string
-	Build(positions []aeroapi.Position) *KmlProduct
+	Build(positions []aeroapi.Position) (*KmlProduct, error)
 }
 
 const feetPerMeter = 3.28084

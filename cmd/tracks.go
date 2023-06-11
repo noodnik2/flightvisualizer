@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/noodnik2/configurator"
 	"log"
@@ -38,30 +39,38 @@ func init() {
 }
 
 var tracksCmd = &cobra.Command{
-	Use:   "tracks",
-	Short: "Visualizes flight tracks",
-	Long:  `Generates KML visualizations of flight track logs retrieved from FlightAware's AeroAPI`,
+	Use:     "tracks",
+	Short:   "Visualizes flight tracks",
+	Long:    `Generates KML visualizations of flight track logs retrieved from FlightAware's AeroAPI`,
+	Version: rootCmd.Version,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		cmdArgs, parseErr := parseArgs(cmd)
 		if parseErr != nil {
-			log.Fatalf("ERROR: %v\n", parseErr)
+			return parseErr
 		}
 
-		if genTracksErr := cmdArgs.GenerateTracks(); genTracksErr != nil {
-			log.Fatalf("ERROR: %v\n", genTracksErr)
+		cmd.SilenceUsage = true
+
+		if configErr := configurator.LoadConfig(internal.GetConfigFilename(cmdArgs.IsVerbose()), &cmdArgs.Config); configErr != nil {
+			return configErr
 		}
-		return nil
+
+		return cmdArgs.GenerateTracks()
 	},
 }
 
 func parseArgs(cmd *cobra.Command) (cmdArgs internal.TracksCommandArgs, err error) {
 
-	if err = configurator.LoadConfig(internal.GetConfigFilename(), &cmdArgs.Config); err != nil {
+	if cmd.Flags().NFlag() == 0 || cmd.Flags().NArg() != 0 {
+		err = errors.New("invalid syntax")
 		return
 	}
 
 	if cmdArgs.VerboseOperation, err = cmd.Flags().GetBool(cmdFlagRootVerbose); err != nil {
+		return
+	}
+	if cmdArgs.DebugOperation, err = cmd.Flags().GetBool(cmdFlagRootDebug); err != nil {
 		return
 	}
 	if cmdArgs.LaunchFirstKml, err = cmd.Flags().GetBool(cmdFlagTracksLaunch); err != nil {
@@ -124,5 +133,5 @@ func parseArgs(cmd *cobra.Command) (cmdArgs internal.TracksCommandArgs, err erro
 }
 
 func incompatibleOptions(option1, option2 string) {
-	log.Printf("NOTE: ignoring '%s' option; incompatible with '%s'", option1, option2)
+	log.Printf("NOTE: ignoring '%s' option; incompatible with '%s'\n", option1, option2)
 }

@@ -50,7 +50,7 @@ func (tc *TracksConverter) Convert(aeroApi aeroapi.Api, tracker kml.TrackGenerat
 					log.Printf("%s: %s\n", mt, err)
 				}
 			} else {
-				log.Printf("NOTE: not all tracks were generated; use 'verbose' for more detail")
+				log.Printf("NOTE: not all tracks were generated; use 'verbose' for more detail\n")
 			}
 		}
 		nGenerated := len(kmlTracks)

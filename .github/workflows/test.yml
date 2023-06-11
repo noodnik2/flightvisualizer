@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main
-      - mock-output-folder
+  pull_request:
+    types: [opened, edited, reopened]
+    branches: [main]
 
 env:
   GO_VERSION: '1.20'
