@@ -34,13 +34,20 @@ type TrackBuilderEnsemble struct {
 
 func (gxt *TrackBuilderEnsemble) Generate(aeroTrack *aeroapi.Track) (*Track, error) {
 
+	const cantGenerateTrackForFlightError = "can't generate KML track for flightId(%s)"
+
+	if len(gxt.Builders) == 0 {
+		return nil, fmt.Errorf(cantGenerateTrackForFlightError+"; no builders", aeroTrack.FlightId)
+	}
+
 	positions := aeroTrack.Positions
 	nPositions := len(positions)
 	var fromTime, toTime *time.Time
-	if nPositions > 0 {
-		fromTime = &positions[0].Timestamp
-		toTime = &positions[nPositions-1].Timestamp
+	if nPositions == 0 {
+		return nil, fmt.Errorf(cantGenerateTrackForFlightError+"; has no positions", aeroTrack.FlightId)
 	}
+	fromTime = &positions[0].Timestamp
+	toTime = &positions[nPositions-1].Timestamp
 
 	var layerNames []string
 	for _, kmlBuilder := range gxt.Builders {
