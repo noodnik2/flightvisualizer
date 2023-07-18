@@ -8,6 +8,8 @@ enabling it to be "played back" in a KML client renderer such as [Google Earth].
 All that's needed to identify (a) flight(s) to [AeroAPI] is an aircraft's "tail number," and optionally
 a "cutoff time" prior to which to consider.  If no "cutoff time" is given, the current time will be used.
 
+See [Installation](#installation) below to get started.
+
 ### Example
 
 ```shell
@@ -55,7 +57,12 @@ See [CONTRIBUTING](./CONTRIBUTING.md) for more information.
 
 ### Installation
 Installing flight visualizer is simply a matter of copying its executable binary (e.g., `fviz` or `fviz.exe` in Windows)
-into your `PATH` from where it can be accessed.  Everything needed is contained in the single binary.
+into your `PATH` from where it can be accessed.  
+
+Everything needed is contained in the single binary which is pre-built for popular operating systems
+and included in the standard [Releases](https://github.com/noodnik2/flightvisualizer/releases).
+
+
 
 ### Configuration
 In order to retrieve flight information using [AeroAPI], you'll need to obtain and install an API Key.
