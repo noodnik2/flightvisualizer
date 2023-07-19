@@ -21,7 +21,6 @@ func TestConvert(t *testing.T) {
 		{
 			name: "simple",
 			TracksConverter: TracksConverter{
-				TailNumber:  "tail#",
 				FlightCount: 1,
 			},
 			Api: &aeroapi.RetrieverSaverApiImpl{
@@ -44,7 +43,7 @@ func TestConvert(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			requirer := require.New(t)
-			convert, err := tc.Convert(tc.Api, tc.TrackGenerator)
+			convert, err := tc.ConvertForTailNumber(tc.Api, tc.TrackGenerator, "tail#")
 			requirer.NoError(err)
 			requirer.NotNil(convert)
 			requirer.Equal(1, len(convert))

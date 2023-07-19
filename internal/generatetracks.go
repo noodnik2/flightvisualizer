@@ -34,6 +34,7 @@ const (
 	sourceTypeMultiTrackRemote               // pull a remote "flight ids" document (e.g., from AeroAPI server)
 	sourceTypeSingleTrackArtifact            // use a recorded "track" artifact as the source document
 	sourceTypeMultiTrackArtifact             // use a recorded "flight ids" artifact as the source document
+	sourceTypeSingleTrackRemote              // pull a remote "flight id" document (e.g., from AeroAPI server)
 )
 
 var TracksLayersSupported = []string{TracksLayerCamera, TracksLayerPath, TracksLayerPlacemark, TracksLayerVector}
@@ -49,6 +50,7 @@ type TracksCommandArgs struct {
 	ArtifactsDir     string
 	KmlLayers        string
 	TailNumber       string
+	FlightNumber     string
 	FlightCount      int
 	CutoffTime       time.Time
 }
@@ -168,14 +170,22 @@ func (tca TracksCommandArgs) newTrackFactory() (kmlTrackFactory, error) {
 	}
 
 	switch st {
+
+	case sourceTypeSingleTrackRemote:
+		// pull single track from remote source (e.g., based upon flight number)
+		return singleTrackRemoteFactory(tca), nil
+
 	case sourceTypeSingleTrackArtifact:
+		// pull single track from a recorded artifact (e.g., using either / both tail number and/or flight id)
 		return singleTrackArtifactFactory(tca), nil
 
-	case sourceTypeMultiTrackArtifact:
-		return multiTrackArtifactFactory(tca), nil
-
 	case sourceTypeMultiTrackRemote:
+		// pull potentially multiple tracks from remote source (e.g., based upon tail number, cutoff time and max flight count)
 		return multiTrackRemoteFactory(tca), nil
+
+	case sourceTypeMultiTrackArtifact:
+		// pull potentially multiple tracks from a recorded artifact (e.g., for tail number potentially having multiple flights)
+		return multiTrackArtifactFactory(tca), nil
 	}
 
 	return nil, errors.New("can't determine source type")
@@ -183,30 +193,25 @@ func (tca TracksCommandArgs) newTrackFactory() (kmlTrackFactory, error) {
 
 func multiTrackRemoteFactory(tca TracksCommandArgs) kmlTrackFactory {
 	return func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
-
-		var artifactSaver aeroapi.ArtifactSaver
-		if tca.SaveResponses {
-			artifactSaver = &aeroapi.FileAeroApi{ArtifactsDir: tca.getArtifactsDir()}
-		}
-
-		verbose := tca.IsVerbose()
-		aeroApi := &aeroapi.RetrieverSaverApiImpl{
-			// reading AeroAPI data from live AeroAPI REST API calls
-			Retriever: &aeroapi.HttpAeroApi{
-				Verbose: verbose,
-				ApiKey:  tca.Config.AeroApiKey,
-				ApiUrl:  tca.Config.AeroApiUrl,
-			},
-
-			Saver: artifactSaver,
-		}
 		tc := iaeroapi.TracksConverter{
-			Verbose:     verbose,
+			Verbose:     tca.IsVerbose(),
 			FlightCount: tca.FlightCount,
-			TailNumber:  tca.TailNumber,
 			CutoffTime:  tca.CutoffTime,
 		}
-		return tc.Convert(aeroApi, tracker)
+		return tc.ConvertForTailNumber(newRemoteAeroApi(tca), tracker, tca.TailNumber)
+	}
+}
+
+func singleTrackRemoteFactory(tca TracksCommandArgs) kmlTrackFactory {
+	return func(tracker kml.TrackGenerator) ([]*kml.Track, error) {
+		if tca.FlightNumber == "" {
+			return nil, errors.New("no flight number was provided")
+		}
+		kmlTrack, err := iaeroapi.ConvertForFlightId(newRemoteAeroApi(tca), tracker, tca.FlightNumber)
+		if err != nil {
+			return nil, err
+		}
+		return []*kml.Track{kmlTrack}, nil
 	}
 }
 
@@ -226,10 +231,9 @@ func multiTrackArtifactFactory(tca TracksCommandArgs) kmlTrackFactory {
 		tc := iaeroapi.TracksConverter{
 			Verbose:     tca.IsVerbose(),
 			FlightCount: tca.FlightCount,
-			TailNumber:  tca.TailNumber,
 			CutoffTime:  tca.CutoffTime,
 		}
-		return tc.Convert(aeroApi, tracker)
+		return tc.ConvertForTailNumber(aeroApi, tracker, tca.TailNumber)
 	}
 }
 
@@ -247,9 +251,31 @@ func singleTrackArtifactFactory(tca TracksCommandArgs) kmlTrackFactory {
 	}
 }
 
+func newRemoteAeroApi(tca TracksCommandArgs) *aeroapi.RetrieverSaverApiImpl {
+	var artifactSaver aeroapi.ArtifactSaver
+	if tca.SaveResponses {
+		artifactSaver = &aeroapi.FileAeroApi{ArtifactsDir: tca.getArtifactsDir()}
+	}
+
+	aeroApi := &aeroapi.RetrieverSaverApiImpl{
+		// reading AeroAPI data from live AeroAPI REST API calls
+		Retriever: &aeroapi.HttpAeroApi{
+			Verbose: tca.IsVerbose(),
+			ApiKey:  tca.Config.AeroApiKey,
+			ApiUrl:  tca.Config.AeroApiUrl,
+		},
+
+		Saver: artifactSaver,
+	}
+	return aeroApi
+}
+
 func (tca TracksCommandArgs) getSourceType() (sourceType, error) {
 
 	if tca.FromArtifacts == "" {
+		if tca.FlightNumber != "" {
+			return sourceTypeSingleTrackRemote, nil
+		}
 		return sourceTypeMultiTrackRemote, nil
 	}
 

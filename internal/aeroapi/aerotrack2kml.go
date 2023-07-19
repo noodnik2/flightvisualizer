@@ -11,14 +11,13 @@ import (
 
 type TracksConverter struct {
 	Verbose     bool
-	TailNumber  string
 	CutoffTime  time.Time
 	FlightCount int
 }
 
-func (tc *TracksConverter) Convert(aeroApi aeroapi.Api, tracker kml.TrackGenerator) ([]*kml.Track, error) {
+func (tc *TracksConverter) ConvertForTailNumber(aeroApi aeroapi.Api, tracker kml.TrackGenerator, tailNumber string) ([]*kml.Track, error) {
 
-	flightIds, getIdsErr := aeroApi.GetFlightIds(tc.TailNumber, tc.CutoffTime)
+	flightIds, getIdsErr := aeroApi.GetFlightIds(tailNumber, tc.CutoffTime)
 	if getIdsErr != nil {
 		return nil, getIdsErr
 	}
@@ -27,14 +26,9 @@ func (tc *TracksConverter) Convert(aeroApi aeroapi.Api, tracker kml.TrackGenerat
 	nFlights := len(flightIds)
 	var errorList []error
 	for i := 0; i < nFlights; i++ {
-		track, getTrackErr := aeroApi.GetTrackForFlightId(flightIds[i])
-		if getTrackErr != nil {
-			errorList = append(errorList, getTrackErr)
-			continue
-		}
-		kmlTrack, kmlTrackErr := tracker.Generate(track)
-		if kmlTrackErr != nil {
-			errorList = append(errorList, kmlTrackErr)
+		kmlTrack, convertErr := ConvertForFlightId(aeroApi, tracker, flightIds[i])
+		if convertErr != nil {
+			errorList = append(errorList, convertErr)
 			continue
 		}
 		kmlTracks = append(kmlTracks, kmlTrack)
@@ -62,4 +56,16 @@ func (tc *TracksConverter) Convert(aeroApi aeroapi.Api, tracker kml.TrackGenerat
 	}
 
 	return kmlTracks, nil
+}
+
+func ConvertForFlightId(aeroApi aeroapi.Api, tracker kml.TrackGenerator, flightId string) (*kml.Track, error) {
+	track, getTrackErr := aeroApi.GetTrackForFlightId(flightId)
+	if getTrackErr != nil {
+		return nil, getTrackErr
+	}
+	kmlTrack, kmlTrackErr := tracker.Generate(track)
+	if kmlTrackErr != nil {
+		return nil, kmlTrackErr
+	}
+	return kmlTrack, nil
 }

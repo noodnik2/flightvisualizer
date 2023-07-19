@@ -22,12 +22,54 @@ set of data (e.g., responses previously received from [AeroAPI]) into another fo
 
 This vision is to extend the application so that it can do "on the fly" transformations of an incoming
 stream of flight track data, feeding it in "real-time" to a rendering engine (such as [Google Earth] or
-[Microsoft Flight Simulator]), to enable visualizations of flight(s) in progress. 
+[Microsoft Flight Simulator]), to enable visualizations of flight(s) in progress.
 
 See the ["Live Cam"](https://github.com/noodnik2/MSFS2020-PilotPathRecorder/blob/master/README-kmlcam.md)
 and [related video demo](https://github.com/noodnik2/MSFS2020-PilotPathRecorder/blob/master/README-kmlcam-QandA.md)
 of how this is already working for a real-time view in [Google Earth] of a flight being flown in 
 [Microsoft Flight Simulator].
+
+### Proposed Implementation Plan using "AeroAPI"
+
+A use case this morning was to track my wife's flight to D.C.  Using the following APIs I was able
+to get periodic updates:
+
+1. Find the `fa_flight_id` value using the `/airports/{id}/flights/departures` API.
+   - For this you need to provide the (ICAO or IATA) airport ID and the `{id}` code for the airline,
+     and provide a reasonable time range containing the time of the flight's departure.
+   - I used a 30-minute time range capturing the actual time of departure somewhere in its middle.
+   - Both of these input values can easily be found using FlightAware's web and mobile apps, 
+     though if needed a call to `/operators` and `/operators/{id}/flights` could be used,
+     though that would be expensive given the number of calls that would be necessary.
+   - E.g.:
+     - ```shell
+       $ curl -X GET "https://aeroapi.flightaware.com/aeroapi/airports/KSFO/flights/departures?airline=ASA&start=2023-07-19T15%3A00%3A00Z&end=2023-07-19T15%3A30%3A00Z&max_pages=2" \
+       -H "Accept: application/json; charset=UTF-8" \
+       -H "x-apikey:  <AeroApiKey>"
+       ```
+2. Use the `/flights/{fa_flight_id}/position` API to periodically retrieve the flight's position
+   and speed; e.g.:
+   - ```shell
+     curl -X GET "https://aeroapi.flightaware.com/aeroapi/flights/ASA8-1689607273-airline-443p/position" \
+     -H "Accept: application/json; charset=UTF-8" \
+     -H "x-apikey: <AeroApiKey>"
+     ```
+   - Which returns at jpath `$.last_position`:
+     - ```json
+       "last_position": {
+         "fa_flight_id": "ASA8-1689607273-airline-443p",
+         "altitude": 370,
+         "altitude_change": "-",
+         "groundspeed": 512,
+         "heading": 101,
+         "latitude": 40.14427,
+         "longitude": -85.72974,
+         "timestamp": "2023-07-19T18:57:05Z",
+         "update_type": "A"
+       },
+       ```
+3. The last step could be repeated to generate and feed KML updates to the destination based upon
+   the last position and speed using a configured spline function, etc.
 
 ## Candidate Sources of Flight Track Data
 
