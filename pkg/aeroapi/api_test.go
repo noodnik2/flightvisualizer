@@ -225,7 +225,7 @@ func newTestPosition(offset int) Position {
 		Timestamp:  ts,
 		GsKnots:    float64(offset),
 		Heading:    float64(offset),
-		AltAglD100: float64(offset),
+		AltMslD100: float64(offset),
 		Latitude:   float64(offset),
 		Longitude:  float64(offset),
 	}

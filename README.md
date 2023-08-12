@@ -17,6 +17,12 @@ $ fviz tracks --tailNumber N8050J --cutoffTime 2023-05-22T19:45:00-04:00 --launc
 $ fviz tracks --tailNumber N81497 --flightCount 1 --launch
 ```
 
+## Featured Flights
+
+See [this write-up](docs/featured/galactic02.md) about a visualization of
+[Galactic 02], the second commercial spaceflight of the American aerospace
+company [Virgin Galactic].
+
 ## Packaging
 
 Flight Visualizer is packaged into a standalone CLI command named `fviz`.
@@ -61,8 +67,6 @@ into your `PATH` from where it can be accessed.
 
 Everything needed is contained in the single binary which is pre-built for popular operating systems
 and included in the standard [Releases](https://github.com/noodnik2/flightvisualizer/releases).
-
-
 
 ### Configuration
 In order to retrieve flight information using [AeroAPI], you'll need to obtain and install an API Key.
@@ -199,7 +203,7 @@ The [output file produced by the command above](artifacts/fvk__230531150622Z-201
 visualizes an [actual flight from Los Angeles to Maui](artifacts/fvt_SWA3774-1685372217-schedule-57p.json)
 taken by some lucky vacationers on Southwest Airlines flight SWA3774 on May 31st.
 
-## Enjoying Visualizations
+## Other Visualizations
 
 While [KML] is a standard "Markup Language," and is supported by many other geospatial applications (perhaps most
 notably [Google Maps], [QGIS] and [ArcGIS Earth]), only [Google Earth] (as of this writing) appears to best support
@@ -265,3 +269,5 @@ mission and value-add: in this case, _vicarious aviation!_
 [QGIS]: https://qgis.org
 [Keyhole Markup Language]: https://www.ogc.org/standard/kml
 [Microsoft Flight Simulator]: https://www.flightsimulator.com
+[Galactic 02]: https://en.wikipedia.org/wiki/Galactic_02
+[Virgin Galactic]: https://www.virgingalactic.com/
