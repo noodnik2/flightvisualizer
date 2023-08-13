@@ -19,8 +19,10 @@ $ fviz tracks --tailNumber N81497 --flightCount 1 --launch
 
 ## Featured Flights
 
+Articles about "Featured Flights" can be found in the [featured](./docs/featured) folder:
+
 <details>
-  <summary><a href="https://en.wikipedia.org/wiki/Galactic_02">Virgin Galactic 02</a> Spaceflight</summary>
+  <summary>Virgin Galactic 02 Spaceflight</summary>
 
 > See [this write-up](docs/featured/galactic02.md) about a visualization of
 > [Galactic 02], the second commercial spaceflight of the American aerospace
