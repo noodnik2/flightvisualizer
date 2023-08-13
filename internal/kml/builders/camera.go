@@ -52,11 +52,11 @@ func (ctb *CameraBuilder) Build(positions []aeroapi.Position) (*KmlProduct, erro
 				),
 				gokml.Longitude(thisPosition.Longitude),
 				gokml.Latitude(thisPosition.Latitude),
-				gokml.Altitude(aeroAlt2Meters(thisPosition.AltAglD100)+cameraHeightFromWheels),
+				gokml.Altitude(aeroAlt2Meters(thisPosition.AltMslD100)+cameraHeightFromWheels),
 				gokml.Heading(thisPosition.Heading),
 				gokml.Tilt(80),
 				gokml.Roll(-bankAngle),
-				gokml.AltitudeMode(gokml.AltitudeModeRelativeToGround),
+				gokml.AltitudeMode(gokml.AltitudeModeAbsolute),
 			)))
 		flyToMode = gokml.GxFlyToModeSmooth
 	}

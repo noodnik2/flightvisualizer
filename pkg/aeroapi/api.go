@@ -24,7 +24,11 @@ type Track struct {
 }
 
 type Position struct {
-	AltAglD100 float64   `json:"altitude"`    // feet / 100 (AGL)
+	// 230811 Changed "AltAglD100" to "AltMslD100" per updated understanding
+	// based upon post: "https://discussions.flightaware.com/t/aero-api-altitude/82883/4"
+	// which reads: "None of our aircraft altitudes will ever be reported in AGL, if that helps."
+	// and also based upon observed results for Virgin Galactic flight
+	AltMslD100 float64   `json:"altitude"`    // feet / 100 (MSL)
 	GsKnots    float64   `json:"groundspeed"` // knots
 	Heading    float64   `json:"heading"`     // 0..359
 	Latitude   float64   `json:"latitude"`    // -90..90

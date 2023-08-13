@@ -14,6 +14,7 @@ import (
 )
 
 const cmdFlagTracksTailNumber = "tailNumber"
+const cmdFlagTracksFlightNumber = "flightNumber"
 const cmdFlagTracksFromArtifacts = "fromArtifacts"
 const cmdFlagTracksSaveArtifacts = "saveArtifacts"
 const cmdFlagTracksNoBanking = "noBanking"
@@ -31,6 +32,7 @@ func init() {
 	tracksCmd.Flags().BoolP(cmdFlagTracksNoBanking, "b", false, "Disable banking heuristic calculations")
 	tracksCmd.Flags().IntP(cmdFlagTracksFlightCount, "c", 0, "Count of (most recent) flights to consider (0=unlimited)")
 	tracksCmd.Flags().StringP(cmdFlagTracksFromArtifacts, "f", "", "Use saved responses instead of querying AeroAPI")
+	tracksCmd.Flags().StringP(cmdFlagTracksFlightNumber, "i", "", "Flight number identifier")
 	tracksCmd.Flags().StringP(cmdFlagTracksLayers, "l", strings.Join(cmdFlagTracksLayersDefault, ","), "Layer(s) of the KML depiction to create")
 	tracksCmd.Flags().StringP(cmdFlagTracksTailNumber, "n", "", "Tail number identifier")
 	tracksCmd.Flags().BoolP(cmdFlagTracksLaunch, "o", false, "Open the KML visualization of the most recent flight retrieved")
@@ -86,6 +88,9 @@ func parseArgs(cmd *cobra.Command) (cmdArgs internal.TracksCommandArgs, err erro
 	if cmdArgs.TailNumber, err = cmd.Flags().GetString(cmdFlagTracksTailNumber); err != nil {
 		return
 	}
+	if cmdArgs.FlightNumber, err = cmd.Flags().GetString(cmdFlagTracksFlightNumber); err != nil {
+		return
+	}
 	if cmdArgs.FromArtifacts, err = cmd.Flags().GetString(cmdFlagTracksFromArtifacts); err != nil {
 		return
 	}
@@ -111,21 +116,36 @@ func parseArgs(cmd *cobra.Command) (cmdArgs internal.TracksCommandArgs, err erro
 		return
 	}
 
-	if cmdArgs.TailNumber == "" && cmdArgs.FromArtifacts == "" {
-		err = fmt.Errorf("required option missing; one of {'%s', '%s'} required", cmdFlagTracksTailNumber, cmdFlagTracksFromArtifacts)
+	if cmdArgs.TailNumber == "" && cmdArgs.FlightNumber == "" && cmdArgs.FromArtifacts == "" {
+		err = fmt.Errorf("required option missing; one of {'%s', '%s', '%s'} required",
+			cmdFlagTracksTailNumber, cmdFlagTracksFlightNumber, cmdFlagTracksFromArtifacts)
 		return
 	}
 
 	// warn user of implications of option combinations by invoking knowledge of downstream semantics
 	if cmdArgs.FromArtifacts != "" {
 		if cmdArgs.SaveResponses { // no reason to save artifacts when we're reading from artifacts
-			incompatibleOptions(cmdFlagTracksSaveArtifacts, cmdFlagTracksFromArtifacts)
+			incompatibleOptions(cmdFlagTracksFromArtifacts, cmdFlagTracksSaveArtifacts)
 		}
 		if cmdArgs.TailNumber != "" { // tail number is inherent to saved artifact being used
-			incompatibleOptions(cmdFlagTracksTailNumber, cmdFlagTracksFromArtifacts)
+			incompatibleOptions(cmdFlagTracksFromArtifacts, cmdFlagTracksTailNumber)
+		}
+		if cmdArgs.FlightNumber != "" { // flight number is inherent to saved artifact being used
+			incompatibleOptions(cmdFlagTracksFromArtifacts, cmdFlagTracksFlightNumber)
 		}
 		if !cmdArgs.CutoffTime.IsZero() { // cutoff time is inherent to saved artifact being used
-			incompatibleOptions(cmdFlagTracksCutoffTime, cmdFlagTracksFromArtifacts)
+			incompatibleOptions(cmdFlagTracksFromArtifacts, cmdFlagTracksCutoffTime)
+		}
+	}
+	if cmdArgs.FlightNumber != "" {
+		if cmdArgs.TailNumber != "" { // tail number is inherent to the identified flight
+			incompatibleOptions(cmdFlagTracksFlightNumber, cmdFlagTracksTailNumber)
+		}
+		if !cmdArgs.CutoffTime.IsZero() { // cutoff time is inherent to the identified flight
+			incompatibleOptions(cmdFlagTracksFlightNumber, cmdFlagTracksCutoffTime)
+		}
+		if cmdArgs.FlightCount != 0 { // flight count is inherent to the identified flight
+			incompatibleOptions(cmdFlagTracksFlightNumber, cmdFlagTracksFlightCount)
 		}
 	}
 

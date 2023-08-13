@@ -132,12 +132,12 @@ func (sp *styledPlacemark) getElements() []gokml.Element {
 		gokml.Placemark(
 			gokml.StyleURL("#"+sp.styleName),
 			gokml.Point(
-				gokml.AltitudeMode(gokml.AltitudeModeRelativeToGround),
+				gokml.AltitudeMode(gokml.AltitudeModeAbsolute),
 				gokml.Coordinates(
 					gokml.Coordinate{
 						Lon: sp.position.Longitude,
 						Lat: sp.position.Latitude,
-						Alt: aeroAlt2Meters(sp.position.AltAglD100),
+						Alt: aeroAlt2Meters(sp.position.AltMslD100),
 					},
 				),
 			),
@@ -176,12 +176,12 @@ func getReportedDescription(thisPosition aeroapi.Position, nextPosition aeroapi.
 		</ul>`,
 		thisPosition.Timestamp.Format(time.RFC3339),
 		[]float64{thisPosition.Latitude, thisPosition.Longitude},
-		thisPosition.AltAglD100*100,
+		thisPosition.AltMslD100*100,
 		thisPosition.Heading,
 		thisPosition.GsKnots,
 		thisPosition.Timestamp.Format(time.RFC3339),
 		[]float64{nextPosition.Latitude, nextPosition.Longitude},
-		nextPosition.AltAglD100*100,
+		nextPosition.AltMslD100*100,
 		thisPosition.Heading,
 		thisPosition.GsKnots,
 	)
