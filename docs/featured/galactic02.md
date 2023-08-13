@@ -105,8 +105,8 @@ me a good idea of what the passengers might have seen from their windows:
 
 ![View From The Apogee](./230811-Galactic02-GeApogee1.jpg)
 
-The view from the apogee didn't match my expectations of "what Earth should look
-like from space," but it certainly was high up enough to give me pause - especially
+Though the view from the apogee didn't match my expectations of "what Earth should
+look like from space," it certainly was high up enough to give me pause - especially
 when I _imagine being physically there_ - and to end any question I might have had
 about the Earth's being flat!  ;-)
 
