@@ -73,7 +73,15 @@ $ cat fvt_VGX3-1691670738-sw-1757p-withascent.json | jq -c ".positions[] | {alti
 ## Launch the Visualization in Google Earth
 
 Once the manual "fixup" of the [AeroAPI] track log was ready, the
-visualization could be created & launched into [Google Earth]:
+visualization could be created & launched into [Google Earth].
+
+### _See this for yourself!_
+
+- _In order to "see" this visualization for yourself - even without running
+the `flightvisualizer` commands described below - just "drag & drop" file named
+`fvk_N202VG_230810143103Z-53328Z_camera-path-vector-withascent.kmz` from the
+[artifacts](./artifacts) folder into a running
+[Google Earth on Desktop](https://www.google.com/earth/versions/#earth-pro)!_
 
 ```shell
 $ fviz tracks --launch --layers camera,path,vector \

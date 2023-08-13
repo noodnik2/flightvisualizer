@@ -19,9 +19,15 @@ $ fviz tracks --tailNumber N81497 --flightCount 1 --launch
 
 ## Featured Flights
 
-See [this write-up](docs/featured/galactic02.md) about a visualization of
-[Galactic 02], the second commercial spaceflight of the American aerospace
-company [Virgin Galactic].
+<details>
+  <summary><a href="https://en.wikipedia.org/wiki/Galactic_02">Virgin Galactic 02</a> Spaceflight</summary>
+
+> See [this write-up](docs/featured/galactic02.md) about a visualization of
+> [Galactic 02], the second commercial spaceflight of the American aerospace
+> company [Virgin Galactic].
+> 
+> ![Galactic 02 Flight Path](docs/featured/230813-VirginGalactic02-SkyPath.jpg)
+</details>
 
 ## Packaging
 
