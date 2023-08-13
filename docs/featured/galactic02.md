@@ -80,7 +80,7 @@ visualization could be created & launched into [Google Earth].
 - _In order to "see" this visualization for yourself - even without running
 the `flightvisualizer` commands described below - just "drag & drop" file named
 `fvk_N202VG_230810143103Z-53328Z_camera-path-vector-withascent.kmz` from the
-[artifacts](./artifacts) folder into a running
+[artifacts](../../artifacts/) folder into a running
 [Google Earth on Desktop](https://www.google.com/earth/versions/#earth-pro)!_
 
 ```shell
@@ -92,21 +92,23 @@ Here are some screenshots I took during my visualization:
 
 ### Shape of the Path
 
+It was pretty amazing to see the "shape" of the flight path with the
+"Path Track" enabled:
+
 ![Shape of the Path](./230811-Galactic02-GeTrackPath.jpg)
-
-It really was pretty amazing to see the "shape" of - and to be able to look around
-while "flying" - the flight path by using the "Path Track" and "Camera Views."
-
-It helped me to get a pretty clear view of the perspective the passengers had from their window.  
 
 ### View From The Top
 
+Using the [Google Earth] controls to look around while "flying" the flight
+path from a first-person perspective (after clicking on "Camera View") gave
+me a good idea of what the passengers might have seen from their windows:
+
 ![View From The Apogee](./230811-Galactic02-GeApogee1.jpg)
 
-The view from the apogee didn't match my expectations of "what Earth should look 
-like from space," but it certainly was high up enough to give one pause - especially
-I imagine if one was _physically there_ - and to end any argument about whether or
-not Earth is flat!  ;-)
+The view from the apogee didn't match my expectations of "what Earth should look
+like from space," but it certainly was high up enough to give me pause - especially
+when I _imagine being physically there_ - and to end any question I might have had
+about the Earth's being flat!  ;-)
 
 [Galactic 02]: https://en.wikipedia.org/wiki/Galactic_02
 [SpaceShipTwo]: https://en.wikipedia.org/wiki/SpaceShipTwo
