@@ -1,5 +1,17 @@
 # Flight <img alt="Airplane" src="https://maps.google.com/mapfiles/kml/shapes/airports.png" /> Visualizer
 
+## Summary
+
+Flight Visualizer is a versatile command-line application designed to transform flight data obtained from
+[AeroAPI] into dynamic visualizations using the Keyhole Markup Language ([KML]). This tool enables users to
+replay flights in KML client renderers such as [Google Earth]. 
+
+By providing either a unique "flight identifier" or an aircraft's "tail number" and time frame,
+users can visualize flights' paths and performance data. The software offers options for various
+visualization "layers," including camera perspective, 3D flight paths and performance vectors.
+The generated KML files can be easily shared and explored, offering a comprehensive and immersive
+way to analyze and (re-) experience flight trajectories and characteristics.
+
 ## Description
 
 Uses data retrieved using [AeroAPI] to create a [Keyhole Markup Language] ([KML]) visualization of a flight,
@@ -31,47 +43,16 @@ Articles about "Featured Flights" can be found in the [featured](./docs/featured
 > ![Galactic 02 Flight Path](docs/featured/230813-VirginGalactic02-SkyPath.jpg)
 </details>
 
-## Packaging
+## Setup & Usage
 
-Flight Visualizer is packaged into a standalone CLI command named `fviz`.
-
-The [Makefile](./Makefile) target `build-all` creates versions for popular architectures,
-including MacOs, Linux and Windows.  
-
-## Building From Source or Contributing
-
-The "home" source control repository of Flight Visualizer is on GitHub at
-[noodnik2/flightvisualizer](https://github.com/noodnik2/flightvisualizer). 
-It was written in, and leverages some relatively recent features of [golang](https://go.dev/).
-Its initial test suite uses `go1.20.2 darwin/amd64`, though it should build successfully
-with any version of `go` version `1.18` or greater.
-
-On a fresh clone / fork of the repository, you should be able to...
-
-<details>
-  <summary><code>$ make clean update build test</code></summary>
-
-```shell
-$ make clean update build test
-rm -rf vendor dist tmp
-go mod tidy
-go mod download
-go mod vendor
-go build -o dist/fviz .
-go test ./...
-ok      github.com/noodnik2/flightvisualizer/internal/aeroapi   0.211s
-ok      github.com/noodnik2/flightvisualizer/internal/kml       0.320s
-ok      github.com/noodnik2/flightvisualizer/pkg/aeroapi        0.372s
-```
-</details>
-
-See [CONTRIBUTING](./CONTRIBUTING.md) for more information.
-
-## Setup / Configuration
+Follow the instructions in the sections below to install, configure and invoke the flight visualizer tool.
 
 ### Installation
-Installing flight visualizer is simply a matter of copying its executable binary (e.g., `fviz` or `fviz.exe` in Windows)
-into your `PATH` from where it can be accessed.  
+
+Flight Visualizer is packaged into a standalone CLI command named `fviz`.
+Installing flight visualizer is simply a matter of copying its executable binary
+(e.g., `fviz` or `fviz.exe` in Windows) from the release distribution into a location
+from which it can be invoked (e.g., a folder within your `PATH`, etc.)    
 
 Everything needed is contained in the single binary which is pre-built for popular operating systems
 and included in the standard [Releases](https://github.com/noodnik2/flightvisualizer/releases).
@@ -112,19 +93,81 @@ Done? [y/N] y
 $ █
 ```
 
-### The `artifacts` Folder
+### Invocation
+
+The typical example invocation scenarios provides below and in the linked documentation should provide
+a generally good idea of how to invoke the `fviz` (Flight Visualizer) command.  When in doubt, use the
+`--help` option to retrieve a syntax digram, e.g.:
+
+<details>
+  <summary><code>$ fviz --help</code></summary>
+
+```shell
+Generates visualizations of flight data
+
+Usage:
+  fviz [flags]
+  fviz [command]
+
+Available Commands:
+  config      Shows current configuration
+  help        Help about any command
+  tracks      Visualizes flight tracks
+
+Flags:
+  -d, --debug     Enables 'debug' operation
+  -h, --help      help for dist/macos/fviz
+  -v, --verbose   Enables 'verbose' operation
+      --version   version for dist/macos/fviz
+
+Use "dist/macos/fviz [command] --help" for more information about a command.
+```
+</details>
+
+Or, to get the options available for the `tracks` (main) subcommand (for example)...
+
+<details>
+  <summary><code>$ fviz tracks --help</code></summary>
+
+```shell
+Generates KML visualizations of flight track logs retrieved from FlightAware's AeroAPI
+
+Usage:
+  fviz tracks [flags]
+
+Flags:
+  -a, --artifactsDir string    Directory to save or load artifacts
+  -t, --cutoffTime string      Cut off time for flight(s) to consider
+  -c, --flightCount int        Count of (most recent) flights to consider (0=unlimited)
+  -i, --flightNumber string    Flight number identifier
+  -f, --fromArtifacts string   Use saved responses instead of querying AeroAPI
+  -h, --help                   help for tracks
+  -o, --launch                 Open the KML visualization of the most recent flight retrieved
+  -l, --layers string          Layer(s) of the KML depiction to create (default "camera,path,vector")
+  -b, --noBanking              Disable banking heuristic calculations
+  -s, --saveArtifacts          Save responses from AeroAPI requests
+  -n, --tailNumber string      Tail number identifier
+      --version                version for tracks
+
+Global Flags:
+  -d, --debug     Enables 'debug' operation
+  -v, --verbose   Enables 'verbose' operation
+```
+</details>
+
+#### The `artifacts` Folder
 
 By default, `fviz` assumes the artifacts it reads & writes should be located in the directory specified in
 its `ARTIFACTS_DIR` configuration property. You can override this per-invocation using the `--artifactsDir`
 option to specify the location for artifacts each time you invoke `fviz`.
 
-## More Example Invocations
+#### Example Invocations
 
-Additional example invocations of `fviz` are presented below to help jumpstart the uninitiated user.
+Examples of typical invocations of `fviz` are presented below to help jumpstart the uninitiated user.
 Additional use cases can be revealed through exploration of the complete set of options available.
-Running the command without options, or with an incomplete set of options, reveals the set of available options. 
+Running the command with the `--help` option will reveal the complete set of available options. 
 
-### Simple Case 
+##### Simple Case 
 
 In this simple case, default [KML] visualizations are created for the (at the time) most recent flights available
 via [AeroAPI] for tail number `N335SP`, and the most recent one  is launched right away into [Google Earth Pro],
@@ -150,7 +193,7 @@ $ fviz tracks --verbose --tailNumber N335SP --launch
 ```
 </details>
 
-### More Options
+##### More Options
 
 Another example leverages more of the available options, including:
 - `--cutoffTime` - target a particular flight within the history (e.g., not just the latest available)
@@ -191,7 +234,7 @@ on/off from within Google Earth:
 - Path (3D flight path appears)
 - Vector (A "vector" visualization of performance data)
 
-### (Re-) Converting Saved [AeroAPI] Into [KML]
+##### (Re-) Converting Saved [AeroAPI] Into [KML]
 
 An important use case for development or support of Flight Visualizer application is to (re-) convert
 already retrieved responses from [AeroAPI] into [KML] (e.g., to avoid making unnecessary calls to the API).
@@ -226,8 +269,53 @@ produce different and interesting perspectives.
 
 ## Watching Your Bill
 
-Queries to [AeroAPI] cost money.  [This page](https://flightaware.com/aeroapi/portal/usage) is one to keep
+Queries to [AeroAPI] can cost money.  [This page](https://flightaware.com/aeroapi/portal/usage) is one to keep
 an eye on while making active use of it.
+
+## Development Workflow
+
+Have ideas?  Try 'em out!
+
+### License & Contributions
+
+- Use of this source code is governed by an Apache-2.0 license that can be found
+  in the [LICENSE](./LICENSE) file
+- Contributions to this project are encouraged, and guidelines are established
+  in the [CONTRIBUTIONS](./CONTRIBUTING.md) file
+
+### Packaging
+
+Flight Visualizer is packaged into a standalone CLI command named `fviz`.
+The [Makefile](./Makefile) target `build-all` creates distribution packages
+for multiple versions of this executable for popular architectures,
+including: `MacOs`, `Linux` and `Windows`.
+
+### Updating and Rebuilding
+
+The "home" source control repository of Flight Visualizer is on GitHub at
+[noodnik2/flightvisualizer](https://github.com/noodnik2/flightvisualizer).
+It was written in, and leverages some relatively recent features of [golang](https://go.dev/).
+Its initial test suite uses `go1.20.2 darwin/amd64`, though it should build successfully
+with any version of `go` version `1.18` or greater.
+
+On a fresh clone / fork of the repository, you should be able to...
+
+<details>
+  <summary><code>$ make clean update build test</code></summary>
+
+```shell
+$ make clean update build test
+rm -rf vendor dist tmp
+go mod tidy
+go mod download
+go mod vendor
+go build -o dist/fviz .
+go test ./...
+ok      github.com/noodnik2/flightvisualizer/internal/aeroapi   0.211s
+ok      github.com/noodnik2/flightvisualizer/internal/kml       0.320s
+ok      github.com/noodnik2/flightvisualizer/pkg/aeroapi        0.372s
+```
+</details>
 
 ## See Also
 
@@ -237,7 +325,19 @@ as they contain additional relevant context.  One such file of note is the [wish
 Please don't hesitate to volunteer your thoughts or ideas regarding enhancements to or collaborations on
 Flight Visualizer!
 
-### Visualization of Simulated Flights
+### Alternative Flight Visualization Options
+
+#### [fsr] - Predecessor to Flight Visualizer
+
+Before the ubiquitous availability of flight track data through online sources such as [AeroAPI]
+(e.g., with the advent and requirement for [ADS-B] transmission), it was necessary to collect flight
+logs using more primitive, on-board device technology.
+
+A predecessor to Flight Visualizer, the [fsr] application enabled similar "flight replay"
+visualizations within [Microsoft Flight Simulator] using data collected in 
+several older track log file formats, from real-world flights.
+
+#### Simulated Flights
 
 If you're a user of [Microsoft Flight Simulator], be sure to check out a related project that uses [KML] to
 produce visualizations _(including in real-time!)_ of simulated flights in [Google Earth]:
@@ -245,24 +345,21 @@ produce visualizations _(including in real-time!)_ of simulated flights in [Goog
   - [LiveCam Support](https://github.com/noodnik2/MSFS2020-PilotPathRecorder/blob/master/README-kmlcam.md) 
   - [LiveCam Q&A](https://github.com/noodnik2/MSFS2020-PilotPathRecorder/blob/master/README-kmlcam-QandA.md)
 
-## License & Contributions
-
-- Use of this source code is governed by an Apache-2.0 license that can be found
-  in the [LICENSE](./LICENSE) file
-- Contributions to this project are encouraged, and guidelines are established
-  in the [CONTRIBUTIONS](./CONTRIBUTING.md) file
-
 ### Building Blocks
 
-Flight Visualizer builds atop many other open-source libraries, perhaps most notably:
+In addition to the online services needed, Flight Visualizer builds atop many other
+open-source libraries, perhaps most notably:
 
-- [cobra](https://cobra.dev/) - _"A Framework for Modern CLI Apps in Go"_ 
-- [go-kml](https://github.com/twpayne/go-kml) - _"convenience methods for creating and writing KML documents"_
+- [Cobra] - _"A Framework for Modern CLI Apps in Go"_ 
+- [go-kml] - _"convenience methods for creating and writing KML documents"_
 
 The complete set of libraries used can be seen of course in the [go.mod](./go.mod) file.
 
-I'd like to express my heartfelt appreciation to the authors and supporters of these high quality
-open-source building blocks, enabling projects like this to quickly get started focusing on their
+#### _Thanks!_
+
+I'd like to express my heartfelt appreciation to the creators and supporters of the high quality
+services and
+open-source building blocks which enable projects like Flight Visualizer to quickly get started focusing on their
 mission and value-add: in this case, _vicarious aviation!_  
 
 [AeroAPI]: https://flightaware.com/commercial/aeroapi
@@ -279,3 +376,7 @@ mission and value-add: in this case, _vicarious aviation!_
 [Microsoft Flight Simulator]: https://www.flightsimulator.com
 [Galactic 02]: https://en.wikipedia.org/wiki/Galactic_02
 [Virgin Galactic]: https://www.virgingalactic.com/
+[Cobra]: https://cobra.dev/
+[go-kml]: https://github.com/twpayne/go-kml
+[fsr]: https://github.com/noodnik2/fsr
+[ADS-B]: https://en.wikipedia.org/wiki/Automatic_Dependent_Surveillance%E2%80%93Broadcast
