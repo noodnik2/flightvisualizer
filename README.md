@@ -12,14 +12,6 @@ visualization "layers," including camera perspective, 3D flight paths and perfor
 The generated KML files can be easily shared and explored, offering a comprehensive and immersive
 way to analyze and (re-) experience flight trajectories and characteristics.
 
-## Description
-
-Uses data retrieved using [AeroAPI] to create a [Keyhole Markup Language] ([KML]) visualization of a flight,
-enabling it to be "played back" in a KML client renderer such as [Google Earth].
-
-All that's needed to identify (a) flight(s) to [AeroAPI] is an aircraft's "tail number," and optionally
-a "cutoff time" prior to which to consider.  If no "cutoff time" is given, the current time will be used.
-
 See [Installation](#installation) below to get started.
 
 ### Example
