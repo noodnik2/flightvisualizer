@@ -101,6 +101,10 @@ by Flight Visualizer:
   - Yes, that's right!  This would enable flight simulator fans to render alternate visualizations
     (see the discussion below about an existing application which
     [_already does this in MSFS2020_](https://github.com/noodnik2/MSFS2020-PilotPathRecorder/blob/master/README-kmlcam.md))
+- Create Your Own Track Logs
+  - [kml_generator](https://github.com/likoosong/kml_generater)
+  - [kml_animation_tools](https://github.com/jackontheroad/kml_animation_tools)
+  - [panoramio_recovery](https://github.com/jackontheroad/panoramio_recovery)
 
 ## Candidate Visualization Targets
 
