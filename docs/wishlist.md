@@ -111,6 +111,9 @@ by Flight Visualizer:
 In addition to [KML], other output formats and technologies should be embraced in order to expand
 the type(s) of visualization(s) supported by Flight Visualizer.  Some examples include:
 
+- [Cesium](https://cesium.com/) — alternate rendering engine (i.e., to Google Earth, which appears to be waning)
+  - Check out [Cesium for Unreal](https://github.com/CesiumGS/cesium-unreal) and also the "try me" page at
+    [CesiumJS](https://cesium.com/platform/cesiumjs/).
 - [GeoJSON](https://geojson.org/)
 - Other data formats supported by geospatial (GIS) or Virtual Reality (VR) applications according to future use cases,
   potentially including:

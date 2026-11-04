@@ -12,7 +12,8 @@ visualization "layers," including camera perspective, 3D flight paths and perfor
 The generated KML files can be easily shared and explored, offering a comprehensive and immersive
 way to analyze and (re-) experience flight trajectories and characteristics.
 
-See [Installation](#installation) below to get started.
+Check out [the `gitdiagram` presentation](./docs/images/noodnik2-flightvisualizer-explained.mp4) of what Flight
+Visualizer is and does, and the [Installation](#installation) section below to get started using it yourself!
 
 ### Example
 
